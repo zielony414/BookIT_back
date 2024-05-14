@@ -173,7 +173,8 @@ def add_service():
 @app.route('/api/strona_rejestracji_firmy/zdjecia', methods=['POST'])
 def add_photos():
     try:
-        photo = request.json.get('photo')
+        files = request.files
+        photo = files.get('file')
         cursor.execute(f"INSERT INTO photos (company_ID, picture) VALUES ((SELECT ID FROM companies WHERE (email='{public_email}'), {photo});")
         
         return jsonify({'message': 'Zdjęcie zostało dodane!'}), 200
