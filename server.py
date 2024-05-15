@@ -33,31 +33,35 @@ def members():
 def get_nav_items():
     return {"nav_items": ["Barber", "Salon kosmetyczny", "Paznokcie", "Masaż", "Zwierzęta", "Siłownia", "Więcej..."]}
 
+@app.route('/api/image_cards')
 def get_image_cards():
-    return {"image_cards" : [
-            {
-                "imageSrc": "images/barber.jpg",
-                "imageAlt": "Image 2",
-                "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut pulvinar ipsum orci, eget ullamcorper lectus cursus nec."
-            },
-            {
-                "imageSrc": "images/salon.jpg",
-                "imageAlt": "Image 3",
-                "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut pulvinar ipsum orci, eget ullamcorper lectus cursus nec."
-            },
-            {
-                "imageSrc": "images/paznokcie.jpg",
-                "imageAlt": "Image 4",
-                "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut pulvinar ipsum orci, eget ullamcorper lectus cursus nec."
-            },
-            {
-                "imageSrc": "https://cdn.builder.io/api/v1/image/assets/TEMP/b10e017e3fafc40f727425bb7f8f66387d777cb825bf4515f5163fb0909ca872?apiKey=d10d36f0508e433185a32e898689ca50&",
-                "imageAlt": "Image 5",
-                "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut pulvinar ipsum orci, eget ullamcorper lectus cursus nec."
-            }
-        ]
-    }
-
+    return [
+        {
+            "imageSrc": "https://cdn.builder.io/api/v1/image/assets/TEMP/5bf5b76bf5e11b64838a512fbe8b3b49af3a57942637b577d09cac72ce05f217?apiKey=d10d36f0508e433185a32e898689ca50&",
+            "imageAlt": "Image 1",
+            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut pulvinar ipsum orci, eget ullamcorper lectus cursus nec."
+        },
+        {
+            "imageSrc": "https://cdn.builder.io/api/v1/image/assets/TEMP/48a5563457b0ec1769d9fed16d4681af7bcfd1c2e1260c6b63a78aec0c217e2f?apiKey=d10d36f0508e433185a32e898689ca50&",
+            "imageAlt": "Image 2",
+            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut pulvinar ipsum orci, eget ullamcorper lectus cursus nec."
+        },
+        {
+            "imageSrc": "https://cdn.builder.io/api/v1/image/assets/TEMP/7971ad9b6cc16d1c9827f31e8d159305a6ff902600bc657418cf2eeb07782242?apiKey=d10d36f0508e433185a32e898689ca50&",
+            "imageAlt": "Image 3",
+            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut pulvinar ipsum orci, eget ullamcorper lectus cursus nec."
+        },
+        {
+            "imageSrc": "https://cdn.builder.io/api/v1/image/assets/TEMP/26c7c156a7f942890e59024481640603515c51f6e323c7c4f844d2127e66db22?apiKey=d10d36f0508e433185a32e898689ca50&",
+            "imageAlt": "Image 4",
+            "description": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut pulvinar ipsum orci, eget ullamcorper lectus cursus nec."
+        },
+        {
+            "imageSrc": "https://cdn.builder.io/api/v1/image/assets/TEMP/b10e017e3fafc40f727425bb7f8f66387d777cb825bf4515f5163fb0909ca872?apiKey=d10d36f0508e433185a32e898689ca50&",
+            "imageAlt": "Image 5",
+            "description": "Lorem  ipsum dolor sit amet, consectetur adipiscing elit. Ut pulvinar ipsum orci, eget ullamcorper lectus cursus nec."
+        }
+    ]
 
 # dekorator, wpisuje się to na froncie w funkcji fetch() i wtedy jest wywoływana ta funkcja poniżej
 @app.route('/api/strona_logowania/user', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
@@ -144,13 +148,12 @@ def registration_company():
                     '{instagram}', '{twitter}', '{tt}', 0, 0, '{nip}', '{phone}', '{description}', '{email}', '{type_of_servise}', '{password}');""")
 
         cursor.execute(f"""INSERT INTO opening_hours (company_id, monday_start, monday_end, tuesday_start, tuesday_end, wensday_start, wensday_end, thursday_start, thursday_end, friday_start, friday_end, saturday_start, saturday_end, sunday_start, sunday_end) 
-                       VALUES ( (SELECT ID FROM companies WHERE (email='{email}')), '{pon_start}', '{pon_stop}', '{wt_start}', '{wt_stop}', '{sr_start}', '{sr_stop}', '{czw_start}', '{czw_stop}', '{pt_start}', '{pt_stop}', '{sob_start}', '{sob_stop}', '{nd_start}', '{nd_stop}'));""")
-        
+              VALUES ( (SELECT ID FROM companies WHERE (email='{email}')), '{pon_start}', '{pon_stop}', '{wt_start}', '{wt_stop}', '{sr_start}', '{sr_stop}', '{czw_start}', '{czw_stop}', '{pt_start}', '{pt_stop}', '{sob_start}', '{sob_stop}', '{nd_start}', '{nd_stop}');""")
         return jsonify({'message': 'Firma została stworzona!'}), 200
     except Exception as err:
         # gdy pojawi się jakiś błąd zwraca error
         return jsonify({'error': str(err)}), 500
-
+ 
 @app.route('/api/strona_rejestracji_firmy/usługa', methods=['POST'])
 def add_service():
     global public_email
@@ -182,5 +185,7 @@ def add_photos():
         return jsonify({'error': str(err)}), 500
 
 
+
 if __name__ == '__main__':
     app.run(debug=True)
+
