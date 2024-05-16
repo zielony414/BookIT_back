@@ -166,8 +166,8 @@ def add_service():
         price = request.json.get('price')
 
         # poprawić approximate_cost bo niewiem co to jest i dodać typ usługi 
-        cursor.execute(f"INSERT INTO services (company_ID, service_name, cost, #approximate_cost, execution_time, additional_info) 
-                       VALUES ((SELECT ID FROM companies WHERE (email='{public_email}')), '{name}', '{price}', '#aproximate_cost', '{hours * 60 + minutes}', '{description}');")
+        cursor.execute(f"""INSERT INTO services (company_ID, service_name, cost, #approximate_cost, execution_time, additional_info) 
+                       VALUES ((SELECT ID FROM companies WHERE (email='{public_email}')), '{name}', '{price}', '#aproximate_cost', '{hours * 60 + minutes}', '{description}');""")
         
         return jsonify({'message': 'Usługa została dodana!'}), 200
     except Exception as err:
