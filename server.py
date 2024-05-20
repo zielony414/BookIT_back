@@ -187,7 +187,7 @@ def add_photos():
         return jsonify({'error': str(err)}), 500
 
 @app.route('/api/wyszukiwanie', methods=['POST'])
-def return_companies():
+def return_search():
     try:
         # pobranie danych z frontu poprzez JSON
         kategoria = request.json.get('kategoria')
@@ -222,6 +222,7 @@ def return_companies():
             name = company['Name']
             city = company['City']
             address = company['Address']
+            category = company['Category']
             reviews_no = company['Reviews_no']
             sum_of_reviews = company['Sum_of_reviews']
             logo = company['Logo']
@@ -236,12 +237,77 @@ def return_companies():
                 'name': name,
                 'logo': logo_url,
                 'description': description,
-                'city': city,
-                'address': address,
+                'category': category,
+                'address': city + ', ' + address,
                 'reviews_no': reviews_no,
                 'avg_rating': sum_of_reviews / reviews_no if reviews_no > 0 else 0
             })
         return jsonify({'companies': result}), 200
+    except Exception as err:
+        # Gdy pojawi się jakiś błąd, zwraca error
+        return jsonify({'error': str(err)}), 500
+
+@app.route('/api/firma', methods=['POST'])
+def return_company():
+    try:
+        # pobranie danych z frontu poprzez JSON
+        firma = request.json.get('firma')
+
+        cursor.execute(f"SELECT ID, Name, City, Address, Logo, Category,
+                        Site_link, Facebook_link, Linkedin_link,
+                        Instagram_link, X_link, Tiktok_link, Reviews_no,
+                        Sum_of_reviews, tel_nr, description 
+                       FROM companies WHERE Name = '{firma}';") 
+                
+        company = cursor.fetchall()
+        
+        cursor.execute(f"SELECT picture FROM bookit_main.photos WHERE company_ID = '{company['ID']}';") 
+
+        photos = cursor.fetchall()
+
+        # Przetwarzanie wyników
+        result = []
+        name = company['Name']
+        city = company['City']
+        address = company['Address']
+        category = company['Category']
+        reviews_no = company['Reviews_no']
+        sum_of_reviews = company['Sum_of_reviews']
+        logo = company['Logo']
+        description = company['description']
+        photos_no = photos['pics_no']
+        if logo:
+            logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
+            logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+            logo_url = f"data:image/png;base64,{logo_base64}"
+        else:
+            logo_url = None
+        
+        result.append({
+            'name': name,
+            'logo': logo_url,
+            'description': description,
+            'category': category,
+            'address': city + ', ' + address,
+            'reviews_no': reviews_no,
+            'avg_rating': sum_of_reviews / reviews_no if reviews_no > 0 else 0,
+            'photos_no': photos_no
+        })
+
+        for photo in photos:
+            picture = photo['picture'] 
+            if picture:
+                picture_bytes = bytes(picture)  # Konwertuj łańcuch znaków na bajty
+                picture_base64 = base64.b64encode(picture_bytes).decode('utf-8')
+                picture_url = f"data:image/png;base64,{picture_base64}"
+            else:
+                logo_url = None
+            result.append({
+                'picture': picture_url
+            })
+
+        
+        return jsonify({'company': result}), 200
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500
