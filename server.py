@@ -41,7 +41,7 @@ def get_image_cards():
         companies = cursor.fetchall()
 
         # Pobierz nazwy kolumn z wyników zapytania SQL
-        columns = [desc[0] for desc in cursor.description]
+        # columns = [desc[0] for desc in cursor.description]
 
         # Przetwarzanie wyników
         result = []
@@ -186,7 +186,65 @@ def add_photos():
     except Exception as err:
         return jsonify({'error': str(err)}), 500
 
+@app.route('/api/wyszukiwanie', methods=['POST'])
+def return_companies():
+    try:
+        # pobranie danych z frontu poprzez JSON
+        kategoria = request.json.get('kategoria')
+        miasto = request.json.get('miasto')
+        sortowanie = request.json.get('sortowanie')
 
+        if miasto == 'Wszystkie':
+            miasto = ''
+
+        if kategoria == 'Wszystkie':
+            kategoria = ''
+
+        if sortowanie == 'Najwyższa ocena':
+            cursor.execute(f"SELECT * 
+                            CASE
+                                WHEN Reviews_no > 0 THEN Sum_of_reviews / Reviews_no
+                                ELSE 0
+                            END AS srednia_ocena 
+                            FROM companies WHERE City = '{miasto}' AND Category = '{kategoria}' 
+                            ORDER BY srednia_ocena DESC ;") 
+            
+        elif sortowanie == 'Najpopularniejsze':
+            cursor.execute(f"SELECT * 
+                            FROM companies WHERE City = '{miasto}' AND Category = '{kategoria}' 
+                            ORDER BY Reviews_no DESC ;")
+        
+        companies = cursor.fetchall()
+        
+        # Przetwarzanie wyników
+        result = []
+        for company in companies:
+            name = company['Name']
+            city = company['City']
+            address = company['Address']
+            reviews_no = company['Reviews_no']
+            sum_of_reviews = company['Sum_of_reviews']
+            logo = company['Logo']
+            description = company['description'] 
+            if logo:
+                logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
+                logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+                logo_url = f"data:image/png;base64,{logo_base64}"
+            else:
+                logo_url = None
+            result.append({
+                'name': name,
+                'logo': logo_url,
+                'description': description,
+                'city': city,
+                'address': address,
+                'reviews_no': reviews_no,
+                'avg_rating': sum_of_reviews / reviews_no if reviews_no > 0 else 0
+            })
+        return jsonify({'companies': result}), 200
+    except Exception as err:
+        # Gdy pojawi się jakiś błąd, zwraca error
+        return jsonify({'error': str(err)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
