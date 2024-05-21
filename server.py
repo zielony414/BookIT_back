@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import pymysql
 import base64
+import re
 
 app = Flask(__name__)
 
@@ -97,9 +98,12 @@ def logging_in_user():
         login = request.json.get('user_login') # pola podane przez front muszą nazywać się user_login i user_password
         password = request.json.get('user_password')
 
+        db = get_db_connection()
+        cursor = db.cursor()
         cursor.execute(f"SELECT * FROM users WHERE email = '{login}' AND password = '{password}';") 
         # zwraca listę dobrych dopasowań
         answer = cursor.fetchall()
+        db.close()
 
         if len(answer) > 0:
             return jsonify({'message': 'Zalogowano pomyślnie!', 'username': login}), 200
@@ -149,12 +153,15 @@ def register_user():
         gender_value = gender_mapping[gender]
 
         # Wstawianie danych do bazy danych
+        db = get_db_connection()
+        cursor = db.cursor()
         cursor.execute("""
             INSERT INTO users (name, email, password, tel_nr, gender, address) 
             VALUES (%s, %s, %s, %s, %s, %s)
         """, (name, email, password, tel_nr, gender, address))
         
         db.commit()  
+        db.close()
         
         return jsonify({'message': 'Zalogowano pomyślnie!'}), 200
     
@@ -167,10 +174,12 @@ def logging_in_company():
         # pobranie danych z frontu poprzez JSON
         login = request.json.get('company_login') # pola podane przez front muszą nazywać się company_login i company_password
         password = request.json.get('company_password')
-
+        db = get_db_connection()
+        cursor = db.cursor()
         cursor.execute(f"SELECT * FROM companies WHERE email = '{login}' AND password = '{password}';") 
         # zwraca listę dobrych dopasowań
         answer = cursor.fetchall()
+        db.close()
 
         if len(answer) > 0:
             return jsonify({'message': 'Zalogowano pomyślnie!', 'username': login}), 200
@@ -219,6 +228,8 @@ def registration_company():
         nd_stop = request.json.get('nd_stop')
 
         # poprawić #Logo i #Sector bo też nie wiem co to
+        db = get_db_connection()
+        cursor = db.cursor()
         cursor.execute(f"""INSERT INTO companies (Name, Adress, #Sector, #Logo, Category, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link,
                     Tiktok_link, Reviews_no, Sum_of_reviews, NIP, tel_nr, description, email, type_of_service, password) 
                     VALUES ('{company_name}', '{city} {street_number} {post_code}', #Sector, #Logo, '{category}', '{link_page}', '{facebook}', '{linkedin}', 
@@ -226,6 +237,8 @@ def registration_company():
 
         cursor.execute(f"""INSERT INTO opening_hours (company_id, monday_start, monday_end, tuesday_start, tuesday_end, wensday_start, wensday_end, thursday_start, thursday_end, friday_start, friday_end, saturday_start, saturday_end, sunday_start, sunday_end) 
               VALUES ( (SELECT ID FROM companies WHERE (email='{email}')), '{pon_start}', '{pon_stop}', '{wt_start}', '{wt_stop}', '{sr_start}', '{sr_stop}', '{czw_start}', '{czw_stop}', '{pt_start}', '{pt_stop}', '{sob_start}', '{sob_stop}', '{nd_start}', '{nd_stop}');""")
+        db.close()
+
         return jsonify({'message': 'Firma została stworzona!'}), 200
     except Exception as err:
         # gdy pojawi się jakiś błąd zwraca error
@@ -243,9 +256,12 @@ def add_service():
         price = request.json.get('price')
 
         # poprawić approximate_cost bo niewiem co to jest i dodać typ usługi 
+        db = get_db_connection()
+        cursor = db.cursor()
         cursor.execute(f"""INSERT INTO services (company_ID, service_name, cost, #approximate_cost, execution_time, additional_info) 
                        VALUES ((SELECT ID FROM companies WHERE (email='{public_email}')), '{name}', '{price}', '#aproximate_cost', '{hours * 60 + minutes}', '{description}');""")
-        
+        db.close()
+
         return jsonify({'message': 'Usługa została dodana!'}), 200
     except Exception as err:
         return jsonify({'error': str(err)}), 500
@@ -255,8 +271,11 @@ def add_photos():
     try:
         files = request.files
         photo = files.get('file')
+        db = get_db_connection()
+        cursor = db.cursor()
         cursor.execute(f"INSERT INTO photos (company_ID, picture) VALUES ((SELECT ID FROM companies WHERE (email='{public_email}'), {photo});")
         
+        db.close()
         return jsonify({'message': 'Zdjęcie zostało dodane!'}), 200
     except Exception as err:
         return jsonify({'error': str(err)}), 500
@@ -268,6 +287,8 @@ def return_search():
         kategoria = request.json.get('kategoria')
         miasto = request.json.get('miasto')
         sortowanie = request.json.get('sortowanie')
+        db = get_db_connection()
+        cursor = db.cursor()
 
         if miasto == 'Wszystkie':
             miasto = ''
@@ -276,6 +297,7 @@ def return_search():
             kategoria = ''
 
         if sortowanie == 'Najwyższa ocena':
+            
             cursor.execute(f"""SELECT * 
                             CASE
                                 WHEN Reviews_no > 0 THEN Sum_of_reviews / Reviews_no
@@ -290,6 +312,7 @@ def return_search():
                             ORDER BY Reviews_no DESC ;""")
         
         companies = cursor.fetchall()
+        db.close()
         
         # Przetwarzanie wyników
         result = []
@@ -328,6 +351,8 @@ def return_company():
         # pobranie danych z frontu poprzez JSON
         firma = request.json.get('firma')
 
+        db = get_db_connection()
+        cursor = db.cursor()
         cursor.execute(f"""SELECT ID, Name, City, Address, Logo, Category,
                         Site_link, Facebook_link, Linkedin_link,
                         Instagram_link, X_link, Tiktok_link, Reviews_no,
@@ -339,6 +364,7 @@ def return_company():
         cursor.execute(f"SELECT picture FROM bookit_main.photos WHERE company_ID = '{company['ID']}';") 
 
         photos = cursor.fetchall()
+        db.close()
 
         # Przetwarzanie wyników
         result = []
