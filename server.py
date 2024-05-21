@@ -116,7 +116,58 @@ def logging_in_user():
     except Exception as err:
         # gdy pojawi się jakiś błąd zwraca error
         return jsonify({'error': str(err)}), 500
+
+@app.route('/api/user_registration', methods=['POST'])
+def register_user():
+    try:
+        # Pobierz dane z żądania
+        name = request.json.get('name')
+        email = request.json.get('email')
+        password = request.json.get('password')
+        tel_nr = request.json.get('phone')
+        gender = request.json.get('gender')
+        address = request.json.get('address')
+
+        # Sprawdź, czy wszystkie pola są obecne
+        if not all([name, email, password, tel_nr, gender, address]):
+            return jsonify({'error': 'Wszystkie pola są obowiązkowe.'}), 400
+
+        # Walidacja emaila
+        if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
+
+        # Walidacja numeru telefonu (musi mieć 9 cyfr)
+        if not re.match(r"^\d{9}$", tel_nr):
+            return jsonify({'error': 'Numer telefonu musi posiadać 9 cyfr.'}), 400
+
+        # Walidacja hasła (musi mieć od 8 do 45 znaków)
+        if not (8 <= len(password) <= 45):
+            return jsonify({'error': 'Hasło musi mieć od 8 do 45 znaków.'}), 400
+
+        # Walidacja adresu (maksymalnie 255 znaków)
+        if len(address) > 255:
+            return jsonify({'error': 'Adres może mieć maksymalnie 255 znaków.'}), 400
+
+        # Mapowanie genderu
+        gender_mapping = {'Mezczyzna': 0, 'Kobieta': 1}
+        if gender not in gender_mapping:
+            return jsonify({'error': 'Nieprawidłowa wartość gender.'}), 400
+
+        gender_value = gender_mapping[gender]
+
+        # Wstawianie danych do bazy danych
+        cursor.execute("""
+            INSERT INTO users (name, email, password, tel_nr, gender, address) 
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (name, email, password, tel_nr, gender, address))
+        
+        db.commit()  
+        
+        return jsonify({'message': 'Zalogowano pomyślnie!'}), 200
     
+    except Exception as err:
+        return jsonify({'error': str(err)}), 500
+
 @app.route('/api/strona_logowania/company', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_company():
     try:
