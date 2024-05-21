@@ -6,23 +6,20 @@ app = Flask(__name__)
 
 #----------------------------------------------------------------------------------------------------------------------
 # connection with database
-db = pymysql.connect(
-    charset = "utf8mb4",
-    connect_timeout = 100,
-    cursorclass = pymysql.cursors.DictCursor,
-    db = "bookit_main",
-    host = "bookit-bookit.f.aivencloud.com",
-    password = "AVNS_lK1EnykcZ5J6TflOpru",
-    read_timeout = 100,
-    port = 22474,
-    user = "avnadmin",
-    write_timeout = 10,
-)
+def get_db_connection():
+    return pymysql.connect(
+        charset="utf8mb4",
+        connect_timeout=500,
+        cursorclass=pymysql.cursors.DictCursor,
+        db="bookit_main",
+        host="bookit-bookit.f.aivencloud.com",
+        password="AVNS_lK1EnykcZ5J6TflOpru",
+        read_timeout=500,
+        port=22474,
+        user="avnadmin",
+        write_timeout=500,
+    )
 
-# dzięki cursorowi będziemy wysyłać i odbierać zapytania do bazy danych
-cursor = db.cursor()
-
-#------------------------------------------------------------------------------------------------------------------------
 public_email = ""
 
 # Members API route
@@ -37,20 +34,19 @@ def get_nav_items():
 @app.route('/api/image_cards')
 def get_image_cards():
     try:
+        db = get_db_connection()
+        cursor = db.cursor()
         cursor.execute("SELECT Name, Logo, description FROM companies;")
         companies = cursor.fetchall()
+        db.close()
 
-        # Pobierz nazwy kolumn z wyników zapytania SQL
-        # columns = [desc[0] for desc in cursor.description]
-
-        # Przetwarzanie wyników
         result = []
         for company in companies:
             name = company['Name']
             logo = company['Logo']
-            description = company['description'] 
+            description = company['description']
             if logo:
-                logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
+                logo_bytes = bytes(logo)
                 logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
                 logo_url = f"data:image/png;base64,{logo_base64}"
             else:
@@ -62,37 +58,34 @@ def get_image_cards():
             })
         return jsonify({'companies': result}), 200
     except Exception as err:
-        # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500
-    
+
 @app.route('/api/strona_wyszukiwania_kategorie')
 def get_categories():
     try:
-        cursor.execute(f"SELECT distinct Category FROM companies;")
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT DISTINCT Category FROM companies;")
         categories = cursor.fetchall()
+        db.close()
 
-        result = []
-        for category in categories:
-            print(category)
-            result.append(category['Category'])
+        result = [category['Category'] for category in categories]
         return jsonify({'categories': result}), 200
     except Exception as err:
-        print("Błąd zapytania SQL:", str(err))
         return jsonify({'error': str(err)}), 500
-    
+
 @app.route('/api/strona_wyszukiwania_miasta')
 def get_cities():
     try:
-        cursor.execute(f"SELECT distinct City FROM companies;")
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute("SELECT DISTINCT City FROM companies;")
         cities = cursor.fetchall()
-        print(cities)
-        result = []
-        for city in cities:
-            print(city)
-            result.append(city['City'])
+        db.close()
+
+        result = [city['City'] for city in cities]
         return jsonify({'cities': result}), 200
     except Exception as err:
-        print("Błąd zapytania SQL:", str(err))
         return jsonify({'error': str(err)}), 500
         
     
