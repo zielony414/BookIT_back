@@ -179,6 +179,7 @@ def logging_in_company():
         cursor.execute(f"SELECT * FROM companies WHERE email = '{login}' AND password = '{password}';") 
         # zwraca listę dobrych dopasowań
         answer = cursor.fetchall()
+        db.commit()
         db.close()
 
         if len(answer) > 0:
@@ -195,6 +196,8 @@ def registration_company():
     global public_email
     try:
         email = request.json.get('email')
+        if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            return jsonify({'error': 'Nieprawidłowy format emaila.'}), 401
         public_email = email
         password = request.json.get('password')
         company_name = request.json.get('company_name')
@@ -230,19 +233,20 @@ def registration_company():
         # poprawić #Logo i #Sector bo też nie wiem co to
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute(f"""INSERT INTO companies (Name, Adress, #Sector, #Logo, Category, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link,
+        cursor.execute(f"""INSERT INTO companies (Name, City, Address, Logo, Category, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link,
                     Tiktok_link, Reviews_no, Sum_of_reviews, NIP, tel_nr, description, email, type_of_service, password) 
-                    VALUES ('{company_name}', '{city} {street_number} {post_code}', #Sector, #Logo, '{category}', '{link_page}', '{facebook}', '{linkedin}', 
+                    VALUES ('{company_name}', '{city}', '{post_code} {street_number}', '0', '{category}', '{link_page}', '{facebook}', '{linkedin}', 
                     '{instagram}', '{twitter}', '{tt}', 0, 0, '{nip}', '{phone}', '{description}', '{email}', '{type_of_servise}', '{password}');""")
 
         cursor.execute(f"""INSERT INTO opening_hours (company_id, monday_start, monday_end, tuesday_start, tuesday_end, wensday_start, wensday_end, thursday_start, thursday_end, friday_start, friday_end, saturday_start, saturday_end, sunday_start, sunday_end) 
               VALUES ( (SELECT ID FROM companies WHERE (email='{email}')), '{pon_start}', '{pon_stop}', '{wt_start}', '{wt_stop}', '{sr_start}', '{sr_stop}', '{czw_start}', '{czw_stop}', '{pt_start}', '{pt_stop}', '{sob_start}', '{sob_stop}', '{nd_start}', '{nd_stop}');""")
+        db.commit()
         db.close()
 
         return jsonify({'message': 'Firma została stworzona!'}), 200
     except Exception as err:
         # gdy pojawi się jakiś błąd zwraca error
-        return jsonify({'error': str(err)}), 500
+        return jsonify({'error': str(err)}), 500 
  
 @app.route('/api/strona_rejestracji_firmy/usługa', methods=['POST'])
 def add_service():
@@ -258,8 +262,9 @@ def add_service():
         # poprawić approximate_cost bo niewiem co to jest i dodać typ usługi 
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute(f"""INSERT INTO services (company_ID, service_name, cost, #approximate_cost, execution_time, additional_info) 
-                       VALUES ((SELECT ID FROM companies WHERE (email='{public_email}')), '{name}', '{price}', '#aproximate_cost', '{hours * 60 + minutes}', '{description}');""")
+        cursor.execute(f"""INSERT INTO services (company_ID, category, service_name, cost, approximate_cost, execution_time, additional_info) 
+                       VALUES ((SELECT ID FROM companies WHERE (email='{public_email}')), '{type}', '{name}', '{price}', '0', '{hours * 60 + minutes}', '{description}');""")
+        db.commit()
         db.close()
 
         return jsonify({'message': 'Usługa została dodana!'}), 200
@@ -269,12 +274,19 @@ def add_service():
 @app.route('/api/strona_rejestracji_firmy/zdjecia', methods=['POST'])
 def add_photos():
     try:
-        files = request.files
-        photo = files.get('file')
+        file = request.json.get('file')
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute(f"INSERT INTO photos (company_ID, picture) VALUES ((SELECT ID FROM companies WHERE (email='{public_email}'), {photo});")
+        file_path = rf"{file}"
+        with open(file_path, 'rb') as file:
+            binary_data = file.read()
         
+        sql = """
+        INSERT INTO photos (company_ID, picture)
+        VALUES ((SELECT ID FROM companies WHERE email=%s), %s)
+        """
+        cursor.execute(sql, (f'{public_email}', binary_data))
+        db.commit()
         db.close()
         return jsonify({'message': 'Zdjęcie zostało dodane!'}), 200
     except Exception as err:
