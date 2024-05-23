@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from decouple import config
 import pymysql
 import base64
 import re
@@ -9,16 +10,16 @@ app = Flask(__name__)
 # connection with database
 def get_db_connection():
     return pymysql.connect(
-        charset="utf8mb4",
-        connect_timeout=500,
+        charset = "utf8mb4",
+        connect_timeout = 500,
         cursorclass=pymysql.cursors.DictCursor,
-        db="bookit_main",
-        host="bookit-bookit.f.aivencloud.com",
-        password="AVNS_lK1EnykcZ5J6TflOpru",
-        read_timeout=500,
-        port=22474,
-        user="avnadmin",
-        write_timeout=500,
+        db = config('DB_DATABASE'),
+        host = config('DB_HOST'),
+        password = config('DB_PASS'),
+        read_timeout = 500,
+        port = config('DB_PORT'),
+        user = config('DB_USER'),
+        write_timeout = 500,
     )
 
 public_email = ""
