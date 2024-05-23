@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from decouple import config
 import pymysql
 import base64
@@ -425,6 +425,54 @@ def return_company():
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500
+
+@app.route('/edit_profile', methods=['POST'])
+def edit_profile():
+    data = request.json
+
+    email = request.json.get('email')
+    nrTelefonu = request.json.get('nrTelefonu')
+    miasto = request.json.get('miasto')
+    plec = request.json.get('plec')
+    stareHaslo = request.json.get('stareHaslo')
+    noweHaslo = request.json.get('noweHaslo')
+    powtorzNoweHaslo = request.json.get('powtorzNoweHaslo')
+
+    try:
+        ##sprawdzanie czy pola są dobre
+        if len(email) > 0:
+            if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+                return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
+
+            print("aktualizuje emaila!")
+
+        if len(nrTelefonu) > 0:
+            if not re.match(r"^\+\d{11}$", nrTelefonu):
+                return jsonify({'error': 'Nieprawidłowy format numeru telefonu.'}), 400
+
+            print("aktualizuje numer telefonu!")
+
+        if len(miasto) > 0:
+            if not re.match(r"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\- ]+$", miasto):
+                return jsonify({'error': 'Nieprawidłowa nazwa miasta.'}), 400
+
+            print("aktualizuje miasto!")
+
+        if len(plec) == 0:
+            print("aktualizuje Cie w chlopa!")
+        else:
+            print("aktualizuje Cie w babe!")
+
+        if len(stareHaslo) > 0 and len(noweHaslo) > 0 and len(powtorzNoweHaslo) > 0:
+            print("aktualizuje haslo!")
+            #jesli stareHaslo sie zgadza z haslem w bazie
+                #jesli nowe hasla sie zgadzaja
+
+
+    except Exception as err:
+        print("Błąd zapytania SQL:", str(err))
+        return jsonify(200)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
