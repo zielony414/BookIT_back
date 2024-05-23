@@ -407,25 +407,41 @@ def edit_profile():
     noweHaslo = request.json.get('noweHaslo')
     powtorzNoweHaslo = request.json.get('powtorzNoweHaslo')
 
-    ##sprawdzanie czy pola są dobre
-    if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
-        return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
-
-    cursor.execute(f"SELECT * FROM users WHERE email = '{login}' AND password = '{password}';")
-
-
-    #cursor.execute(f"SELECT * FROM users WHERE email = '{login}' AND password = '{password}';")
-
-
     try:
-        cursor.execute(f"SELECT * from users;")
-        users = cursor.fetchall()
-        for user in users:
-            print(user)
+        ##sprawdzanie czy pola są dobre
+        if len(email) > 0:
+            if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+                return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
+
+            print("aktualizuje emaila!")
+
+        if len(nrTelefonu) > 0:
+            if not re.match(r"^\+\d{11}$", nrTelefonu):
+                return jsonify({'error': 'Nieprawidłowy format numeru telefonu.'}), 400
+
+            print("aktualizuje numer telefonu!")
+
+        if len(miasto) > 0:
+            if not re.match(r"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\- ]+$", miasto):
+                return jsonify({'error': 'Nieprawidłowa nazwa miasta.'}), 400
+
+            print("aktualizuje miasto!")
+
+        if len(plec) == 0:
+            print("aktualizuje Cie w chlopa!")
+        else:
+            print("aktualizuje Cie w babe!")
+
+        if len(stareHaslo) > 0 and len(noweHaslo) > 0 and len(powtorzNoweHaslo) > 0:
+            print("aktualizuje haslo!")
+            #jesli stareHaslo sie zgadza z haslem w bazie
+                #jesli nowe hasla sie zgadzaja
+
 
     except Exception as err:
         print("Błąd zapytania SQL:", str(err))
         return jsonify(200)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
