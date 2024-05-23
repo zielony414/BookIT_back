@@ -1,6 +1,7 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 import pymysql
 import base64
+import re
 
 app = Flask(__name__)
 
@@ -393,6 +394,38 @@ def return_company():
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500
+
+@app.route('/edit_profile', methods=['POST'])
+def edit_profile():
+    data = request.json
+
+    email = request.json.get('email')
+    nrTelefonu = request.json.get('nrTelefonu')
+    miasto = request.json.get('miasto')
+    plec = request.json.get('plec')
+    stareHaslo = request.json.get('stareHaslo')
+    noweHaslo = request.json.get('noweHaslo')
+    powtorzNoweHaslo = request.json.get('powtorzNoweHaslo')
+
+    ##sprawdzanie czy pola są dobre
+    if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+        return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
+
+    cursor.execute(f"SELECT * FROM users WHERE email = '{login}' AND password = '{password}';")
+
+
+    #cursor.execute(f"SELECT * FROM users WHERE email = '{login}' AND password = '{password}';")
+
+
+    try:
+        cursor.execute(f"SELECT * from users;")
+        users = cursor.fetchall()
+        for user in users:
+            print(user)
+
+    except Exception as err:
+        print("Błąd zapytania SQL:", str(err))
+        return jsonify(200)
 
 if __name__ == '__main__':
     app.run(debug=True)
