@@ -413,6 +413,88 @@ def return_company():
         # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500
 
+
+@app.route('/api/Strona_zarządzania_firmą', methods=['POST'])
+def return_company_details():
+    try:
+        # Pobranie danych z przesłanego żądania POST
+        company_id = request.json.get('company_id')
+
+        # Nawiązanie połączenia z bazą danych
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
+        cursor.execute("SELECT Name, Description, Logo, tel_nr FROM companies WHERE ID = %s", (company_id,))
+        company = cursor.fetchone()
+
+        # Zamknięcie połączenia z bazą danych
+        db.close()
+
+        # Jeśli nie ma takiej firmy, zwróć błąd 404
+        if not company:
+            return jsonify({'error': 'Company not found'}), 404
+
+        result = []
+        name = company['Name']
+        description = company['Description']
+        logo = company['Logo']
+        numer = company['tel_nr']
+        if logo:
+            logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
+            logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+            logo_url = f"data:image/png;base64,{logo_base64}"
+        else:
+            logo_url = None
+
+
+        # Utwórz słownik z nazwą firmy
+        result = ({
+            'name': name,
+            'description': description,
+            'logo': logo_url,
+            'numer': numer
+        })
+
+        # Zwróć nazwę firmy w formacie JSON
+        return jsonify(result), 200
+    except Exception as err:
+        # Gdy pojawi się jakiś błąd, zwróć błąd 500
+        return jsonify({'error': str(err)}), 500
+
+
+@app.route('/api/Strona_zarządzania_firmą2', methods=['POST'])
+def return_company_hours():
+    try:
+        company_id = request.json.get('company_id')
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        #TODO może ktoś ogarnie dlaczego to nie cziała
+
+        cursor.execute(f"""SELECT monday_start FROM opening_hours WHERE ID = {company_id}""")
+        hours = cursor.fetchone()
+        db.commit()
+        db.close()
+
+
+        if not hours:
+            return jsonify({'error': 'Company not found'}), 404
+
+        time_value = hours[0]
+        formatted_time = time_value.strftime('%H:%M')
+        #monday_start = hours['monday_start']
+        result = {
+            'monday_start': formatted_time
+        }
+
+
+        return jsonify(result), 200
+    except Exception as err:
+        print(err)
+        return jsonify({'error': str(err)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True)
 
