@@ -426,6 +426,72 @@ def return_company():
         # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500
 
+
+@app.route('/api/services')
+def get_services_by_company_id():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        company_id = request.args.get('company_id')
+        if not company_id:
+            return jsonify({"error": "Missing company_id"}), 400
+
+        query = "SELECT ID, service_name, cost, execution_time, approximate_cost FROM services WHERE company_ID = %s"
+        cursor.execute(query, (company_id,))
+        services = cursor.fetchall()
+
+        service_list = [{
+            "id": service['ID'],
+            "name": service['service_name'], 
+            "cost": service['cost'], 
+            "time": str(service['execution_time']),
+            "time_minutes": service['execution_time'].total_seconds() // 60,
+            "approximate_cost": service['approximate_cost']
+            } 
+            
+            for service in services
+        ]
+        return jsonify(service_list)
+        
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/api/add_booking', methods=['POST'])
+def add_booking():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        data = request.json
+        print("Received data:", data)
+
+        company_id = data['company_id']
+        user_id = data['user_id']
+        service_id = data['service_id']
+        booking_time = data['booking_time']
+        confirm_mail = data['confirm_mail']
+        reminder_mail = data['reminder_mail']
+        confirm_sms = data['confirm_sms']
+        reminder_sms = data['reminder_sms']
+
+        query = """
+            INSERT INTO bookings (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(query, (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms))
+        db.commit()
+
+        return jsonify({"message": "Booking added successfully"}), 201
+    except Exception as e:
+        print("Error:", str(e))
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
 if __name__ == '__main__':
     app.run(debug=True)
 
