@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-from decouple import config
 import pymysql
 import base64
 import re
@@ -551,6 +550,89 @@ def upload_file():
             "status": 'success'          
         })
     return resp
+
+@app.route('/edit_profile', methods=['POST'])
+def edit_profile():
+
+    if not log_as_user:
+        return jsonify({'error': 'Nie zalogowany.'}), 401
+
+    email = request.json.get('email')
+    nrTelefonu = request.json.get('nrTelefonu')
+    miasto = request.json.get('miasto')
+    plec = request.json.get('plec')
+    stareHaslo = request.json.get('stareHaslo')
+    noweHaslo = request.json.get('noweHaslo')
+    powtorzNoweHaslo = request.json.get('powtorzNoweHaslo')
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    try:
+        if len(nrTelefonu) > 0:
+            if not re.match(r"^\+\d{11}$", nrTelefonu):
+                return jsonify({'error': 'Nieprawidłowy format numeru telefonu.'}), 400
+
+            else:
+                query = 'UPDATE users SET tel_nr = ? WHERE email = ?', (nrTelefonu, logged_email)
+                cursor.execute(query)
+                print("zaktualizowano numer telefonu!")
+
+        if miasto and len(miasto) > 0:
+            if not re.match(r"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\- ]+$", miasto):
+                return jsonify({'error': 'Nieprawidłowa nazwa miasta.'}), 400
+            cursor.execute('UPDATE users SET city = ? WHERE email = ?', (miasto, logged_email))
+            print("zaktualizowano miasto!")
+
+        if len(plec) == 0:
+            query = f'UPDATE users SET gender = {plec} WHERE email = {logged_email};'
+            db = get_db_connection()
+            cursor = db.cursor()
+            cursor.execute(query)
+            db.close()
+            print("zaktualizowano plec, jestes chlopem!")
+        else:
+            query = f'UPDATE users SET gender = {plec} WHERE email = {logged_email};'
+            db = get_db_connection()
+            cursor = db.cursor()
+            cursor.execute(query)
+            db.close()
+            print("zaktualizowano plec, jestes baba!")
+
+        if len(stareHaslo) > 0 and len(noweHaslo) > 0 and len(powtorzNoweHaslo) > 0:
+            #wyciaganie starego hasla z bazy
+            query = f'SELECT password FROM users WHERE email = {logged_email};'
+            db = get_db_connection()
+            cursor = db.cursor()
+            cursor.execute(query)
+            haslo = cursor.fetchone()
+            db.close()
+
+            #jesli stareHaslo sie zgadza z haslem w bazie
+            if stareHaslo == haslo and noweHaslo == powtorzNoweHaslo:
+                query = f'UPDATE users SET password = {noweHaslo} WHERE email = {logged_email};'
+                db = get_db_connection()
+                cursor = db.cursor()
+                cursor.execute(query)
+                db.close()
+                print("zaktualizowano haslo!")
+
+        ##sprawdzanie czy pola są dobre
+        if email and len(email) > 0:
+            if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+                return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
+            cursor.execute('UPDATE users SET email = ? WHERE email = ?', (email, logged_email))
+            print("Email zaktualizowany pomyślnie")
+            logged_email = email
+
+        db.commit()
+        db.close()
+        return jsonify({'message': 'Profil zaktualizowany pomyślnie.'}), 200
+
+
+    except Exception as err:
+        print("Błąd zapytania SQL:", str(err))
+        return jsonify({'error': 'Wystąpił błąd.'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
