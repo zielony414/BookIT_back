@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
-from decouple import config
 import pymysql
 import base64
 import re
+from werkzeug.utils import secure_filename #pip install Werkzeug
 
 app = Flask(__name__)
 
@@ -13,16 +13,26 @@ def get_db_connection():
         charset = "utf8mb4",
         connect_timeout = 500,
         cursorclass=pymysql.cursors.DictCursor,
-        db = config('DB_DATABASE'),
-        host = config('DB_HOST'),
-        password = config('DB_PASS'),
-        read_timeout = 500,
-        port = config('DB_PORT'),
-        user = config('DB_USER'),
-        write_timeout = 500,
+        # db = config('DB_DATABASE'),
+        # host = config('DB_HOST'),
+        # password = config('DB_PASS'),
+        # read_timeout = 500,
+        # port = config('DB_PORT'),
+        # user = config('DB_USER'),
+        # write_timeout = 500,
+        db="bookit_main",
+        host="bookit-bookit.f.aivencloud.com",
+        password="AVNS_lK1EnykcZ5J6TflOpru",
+        read_timeout=500,
+        port=22474,
+        user="avnadmin",
+        write_timeout=500,
     )
 
-public_email = ""
+public_email_company_reg = "contact@bury.com" # zmienna potrzebna do rejestracji firmy
+log_as_company = False # True - zalogowano jako firma
+log_as_user = False # True - zalogowano jako użytkownik
+logged_email = "" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 
 # Members API route
 @app.route('/members')
@@ -94,6 +104,7 @@ def get_cities():
 # dekorator, wpisuje się to na froncie w funkcji fetch() i wtedy jest wywoływana ta funkcja poniżej
 @app.route('/api/strona_logowania/user', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_user():
+    global log_as_user, log_as_company, logged_email
     try:
         # pobranie danych z frontu poprzez JSON
         login = request.json.get('user_login') # pola podane przez front muszą nazywać się user_login i user_password
@@ -107,6 +118,9 @@ def logging_in_user():
         db.close()
 
         if len(answer) > 0:
+            log_as_user = True
+            log_as_company = False
+            logged_email = login
             return jsonify({'message': 'Zalogowano pomyślnie!', 'username': login}), 200
         else:
             return jsonify({'message': 'Niepoprawne dane logowania!'}), 401
@@ -164,13 +178,14 @@ def register_user():
         db.commit()  
         db.close()
         
-        return jsonify({'message': 'Zalogowano pomyślnie!'}), 200
+        return jsonify({'message': 'Zarejestrowano użytkownika pomyślnie!'}), 200
     
     except Exception as err:
         return jsonify({'error': str(err)}), 500
 
 @app.route('/api/strona_logowania/company', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_company():
+    global log_as_user, log_as_company, logged_email
     try:
         # pobranie danych z frontu poprzez JSON
         login = request.json.get('company_login') # pola podane przez front muszą nazywać się company_login i company_password
@@ -184,7 +199,10 @@ def logging_in_company():
         db.close()
 
         if len(answer) > 0:
-            return jsonify({'message': 'Zalogowano pomyślnie!', 'username': login}), 200
+            log_as_company = True
+            log_as_user = False
+            logged_email = login
+            return jsonify({'message': 'Zalogowano pomyślnie jako firma!', 'username': login}), 200
         else:
             return jsonify({'message': 'Niepoprawne dane logowania!'}), 401
         
@@ -194,12 +212,12 @@ def logging_in_company():
 
 @app.route('/api/strona_rejestracji_firmy/create', methods=['POST'])
 def registration_company():
-    global public_email
+    global public_email_company_reg
     try:
         email = request.json.get('email')
         if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
             return jsonify({'error': 'Nieprawidłowy format emaila.'}), 401
-        public_email = email
+        public_email_company_reg = email
         password = request.json.get('password')
         company_name = request.json.get('company_name')
         phone = request.json.get('phone')
@@ -251,7 +269,7 @@ def registration_company():
  
 @app.route('/api/strona_rejestracji_firmy/usługa', methods=['POST'])
 def add_service():
-    global public_email
+    global public_email_company_reg
     try:
         name = request.json.get('name')
         type = request.json.get('type')
@@ -264,7 +282,7 @@ def add_service():
         db = get_db_connection()
         cursor = db.cursor()
         cursor.execute(f"""INSERT INTO services (company_ID, category, service_name, cost, approximate_cost, execution_time, additional_info) 
-                       VALUES ((SELECT ID FROM companies WHERE (email='{public_email}')), '{type}', '{name}', '{price}', '0', '{hours * 60 + minutes}', '{description}');""")
+                       VALUES ((SELECT ID FROM companies WHERE (email='{public_email_company_reg}')), '{type}', '{name}', '{price}', '0', '{hours * 60 + minutes}', '{description}');""")
         db.commit()
         db.close()
 
@@ -272,27 +290,6 @@ def add_service():
     except Exception as err:
         return jsonify({'error': str(err)}), 500
     
-@app.route('/api/strona_rejestracji_firmy/zdjecia', methods=['POST'])
-def add_photos():
-    try:
-        file = request.json.get('file')
-        db = get_db_connection()
-        cursor = db.cursor()
-        file_path = rf"{file}"
-        with open(file_path, 'rb') as file:
-            binary_data = file.read()
-        
-        sql = """
-        INSERT INTO photos (company_ID, picture)
-        VALUES ((SELECT ID FROM companies WHERE email=%s), %s)
-        """
-        cursor.execute(sql, (f'{public_email}', binary_data))
-        db.commit()
-        db.close()
-        return jsonify({'message': 'Zdjęcie zostało dodane!'}), 200
-    except Exception as err:
-        return jsonify({'error': str(err)}), 500
-
 @app.route('/api/wyszukiwanie', methods=['POST'])
 def return_search():
     try:
@@ -427,6 +424,7 @@ def return_company():
         return jsonify({'error': str(err)}), 500
 
 
+<<<<<<< HEAD
 @app.route('/api/services')
 def get_services_by_company_id():
     try:
@@ -492,6 +490,218 @@ def add_booking():
     finally:
         db.close()
 
+=======
+@app.route('/api/Strona_zarządzania_firmą', methods=['POST'])
+def return_company_details():
+    try:
+        # Pobranie danych z przesłanego żądania POST
+        company_id = request.json.get('company_id')
+
+        # Nawiązanie połączenia z bazą danych
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
+        cursor.execute("SELECT Name, Description, Logo, tel_nr FROM companies WHERE ID = %s", (company_id,))
+        company = cursor.fetchone()
+
+        # Zamknięcie połączenia z bazą danych
+        db.close()
+
+        # Jeśli nie ma takiej firmy, zwróć błąd 404
+        if not company:
+            return jsonify({'error': 'Company not found'}), 404
+
+        result = []
+        name = company['Name']
+        description = company['Description']
+        logo = company['Logo']
+        numer = company['tel_nr']
+        if logo:
+            logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
+            logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+            logo_url = f"data:image/png;base64,{logo_base64}"
+        else:
+            logo_url = None
+
+
+        # Utwórz słownik z nazwą firmy
+        result = ({
+            'name': name,
+            'description': description,
+            'logo': logo_url,
+            'numer': numer
+        })
+
+        # Zwróć nazwę firmy w formacie JSON
+        return jsonify(result), 200
+    except Exception as err:
+        # Gdy pojawi się jakiś błąd, zwróć błąd 500
+        return jsonify({'error': str(err)}), 500
+
+
+@app.route('/api/Strona_zarządzania_firmą2', methods=['POST'])
+def return_company_hours():
+    try:
+        company_id = request.json.get('company_id')
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        #TODO może ktoś ogarnie dlaczego to nie cziała
+
+        cursor.execute(f"""SELECT monday_start FROM opening_hours WHERE ID = {company_id}""")
+        hours = cursor.fetchone()
+        db.commit()
+        db.close()
+
+
+        if not hours:
+            return jsonify({'error': 'Company not found'}), 404
+
+        time_value = hours[0]
+        formatted_time = time_value.strftime('%H:%M')
+        #monday_start = hours['monday_start']
+        result = {
+            'monday_start': formatted_time
+        }
+
+
+        return jsonify(result), 200
+    except Exception as err:
+        print(err)
+        return jsonify({'error': str(err)}), 500
+
+ 
+ALLOWED_EXTENSIONS = set(['png', 'jpg',  'jpeg'])
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+  
+@app.route('/api/strona_rejestracji_firmy/zdjecia', methods=['POST'])
+def upload_file():
+    if 'files[]' not in request.files:
+        resp = jsonify({
+                "message":'No file part in the request',
+                "status": 'failed'          
+            })
+        return resp
+    
+    i = 0
+    files = request.files.getlist('files[]')
+    for file in files:
+        if (i==0 and file and allowed_file(file.filename)):
+            filedata = file.read()
+            db = get_db_connection()
+            cursor = db.cursor()
+            sql = """UPDATE companies SET Logo=%s WHERE id=(SELECT c.ID FROM (SELECT ID FROM companies WHERE email=%s) AS c)"""
+            cursor.execute(sql, (filedata, public_email_company_reg))
+            db.commit()
+            db.close()
+        elif i > 0 and file and allowed_file(file.filename):
+            filedata = file.read()
+            db = get_db_connection()
+            cursor = db.cursor()
+            sql = """INSERT INTO photos (company_ID, picture) VALUES ((SELECT ID FROM companies WHERE email=%s), %s)"""
+            cursor.execute(sql, (public_email_company_reg, filedata))
+            db.commit()
+            db.close()
+        else:
+            resp = jsonify({
+            "message":'Nie dodano zdjęc',
+            "status": 'unsuccess'          
+            })
+            return resp
+        i=i+1
+    resp = jsonify({
+            "message":'Files successfully uploaded filename',
+            "status": 'success'          
+        })
+    return resp
+
+@app.route('/edit_profile', methods=['POST'])
+def edit_profile():
+
+    if not log_as_user:
+        return jsonify({'error': 'Nie zalogowany.'}), 401
+
+    email = request.json.get('email')
+    nrTelefonu = request.json.get('nrTelefonu')
+    miasto = request.json.get('miasto')
+    plec = request.json.get('plec')
+    stareHaslo = request.json.get('stareHaslo')
+    noweHaslo = request.json.get('noweHaslo')
+    powtorzNoweHaslo = request.json.get('powtorzNoweHaslo')
+
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    try:
+        if len(nrTelefonu) > 0:
+            if not re.match(r"^\+\d{11}$", nrTelefonu):
+                return jsonify({'error': 'Nieprawidłowy format numeru telefonu.'}), 400
+
+            else:
+                query = 'UPDATE users SET tel_nr = ? WHERE email = ?', (nrTelefonu, logged_email)
+                cursor.execute(query)
+                print("zaktualizowano numer telefonu!")
+
+        if miasto and len(miasto) > 0:
+            if not re.match(r"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\- ]+$", miasto):
+                return jsonify({'error': 'Nieprawidłowa nazwa miasta.'}), 400
+            cursor.execute('UPDATE users SET city = ? WHERE email = ?', (miasto, logged_email))
+            print("zaktualizowano miasto!")
+
+        if len(plec) == 0:
+            query = f'UPDATE users SET gender = {plec} WHERE email = {logged_email};'
+            db = get_db_connection()
+            cursor = db.cursor()
+            cursor.execute(query)
+            db.close()
+            print("zaktualizowano plec, jestes chlopem!")
+        else:
+            query = f'UPDATE users SET gender = {plec} WHERE email = {logged_email};'
+            db = get_db_connection()
+            cursor = db.cursor()
+            cursor.execute(query)
+            db.close()
+            print("zaktualizowano plec, jestes baba!")
+
+        if len(stareHaslo) > 0 and len(noweHaslo) > 0 and len(powtorzNoweHaslo) > 0:
+            #wyciaganie starego hasla z bazy
+            query = f'SELECT password FROM users WHERE email = {logged_email};'
+            db = get_db_connection()
+            cursor = db.cursor()
+            cursor.execute(query)
+            haslo = cursor.fetchone()
+            db.close()
+
+            #jesli stareHaslo sie zgadza z haslem w bazie
+            if stareHaslo == haslo and noweHaslo == powtorzNoweHaslo:
+                query = f'UPDATE users SET password = {noweHaslo} WHERE email = {logged_email};'
+                db = get_db_connection()
+                cursor = db.cursor()
+                cursor.execute(query)
+                db.close()
+                print("zaktualizowano haslo!")
+
+        ##sprawdzanie czy pola są dobre
+        if email and len(email) > 0:
+            if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+                return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
+            cursor.execute('UPDATE users SET email = ? WHERE email = ?', (email, logged_email))
+            print("Email zaktualizowany pomyślnie")
+            logged_email = email
+
+        db.commit()
+        db.close()
+        return jsonify({'message': 'Profil zaktualizowany pomyślnie.'}), 200
+
+
+    except Exception as err:
+        print("Błąd zapytania SQL:", str(err))
+        return jsonify({'error': 'Wystąpił błąd.'}), 500
+
+>>>>>>> 010ed1f4ec6146b6d3a36cd96909a72de0cf0d56
 if __name__ == '__main__':
     app.run(debug=True)
 
