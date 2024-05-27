@@ -2,7 +2,12 @@ from flask import Flask, request, jsonify
 import pymysql
 import base64
 import re
+import mail_sender
+import free_day
+import schedule # pip install schedule
+import time
 from werkzeug.utils import secure_filename #pip install Werkzeug
+from decouple import config
 
 app = Flask(__name__)
 
@@ -13,20 +18,13 @@ def get_db_connection():
         charset = "utf8mb4",
         connect_timeout = 500,
         cursorclass=pymysql.cursors.DictCursor,
-        # db = config('DB_DATABASE'),
-        # host = config('DB_HOST'),
-        # password = config('DB_PASS'),
-        # read_timeout = 500,
-        # port = config('DB_PORT'),
-        # user = config('DB_USER'),
-        # write_timeout = 500,
-        db="bookit_main",
-        host="bookit-bookit.f.aivencloud.com",
-        password="AVNS_lK1EnykcZ5J6TflOpru",
-        read_timeout=500,
-        port=22474,
-        user="avnadmin",
-        write_timeout=500,
+        db = config('DB_DATABASE'),
+        host = config('DB_HOST'),
+        password = config('DB_PASS'),
+        read_timeout = 500,
+        port = config('DB_PORT'),
+        user = config('DB_USER'),
+        write_timeout = 500
     )
 
 public_email_company_reg = "contact@bury.com" # zmienna potrzebna do rejestracji firmy
@@ -698,5 +696,7 @@ def add_booking():
     finally:
         db.close()
 
+
 if __name__ == '__main__':
     app.run(debug=True)
+    schedule.every().day.at("9:00").do(mail_sender.send_scheduled_emails)
