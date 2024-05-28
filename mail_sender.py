@@ -2,6 +2,7 @@ import smtplib
 from decouple import config
 from datetime import datetime
 import os
+import pymysql
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -56,8 +57,6 @@ def add_scheduled_email(receiver_email, title, message, date):
         with open("scheduled_emails.txt", 'a') as file:
             file.write(log_entry)
 
-
-
 # Wysyłanie zaplanowanych e-maili z pliku scheduled_emails.txt
 def send_scheduled_emails():
     try:
@@ -81,3 +80,37 @@ def send_scheduled_emails():
         print(f"Plik {"scheduled_emails.txt"} nie został znaleziony.")
     except Exception as e:
         print(f"Wystąpił błąd: {e}")
+
+# Funkcja do usuwania starych rezerwacji, usuwa starsze niż rok
+def delete_old_logs():
+    try:
+        db = pymysql.connect(
+            charset="utf8mb4",
+            connect_timeout=500,
+            cursorclass=pymysql.cursors.DictCursor,
+            db=config('DB_DATABASE'),
+            host=config('DB_HOST'),
+            password=config('DB_PASS'),
+            read_timeout=500,
+            port=int(config('DB_PORT')),
+            user=config('DB_USER'),
+            write_timeout=500,
+        )
+
+        with db.cursor() as cursor:
+            # Wyłączenie trybu bezpiecznej aktualizacji
+            cursor.execute('SET SQL_SAFE_UPDATES = 0;')
+
+            # Usunięcie starych logów
+            cursor.execute('DELETE FROM bookings WHERE booking_time < NOW() - INTERVAL 1 YEAR;')
+
+            # Ponowne włączenie trybu bezpiecznej aktualizacji
+            cursor.execute('SET SQL_SAFE_UPDATES = 1;')
+
+        db.commit()  
+
+    except pymysql.MySQLError as e:
+        print(f"Error: {e}")
+
+    finally:
+        db.close()  

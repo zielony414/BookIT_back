@@ -5,7 +5,6 @@ import re
 import mail_sender
 import free_day
 import schedule # pip install schedule
-import time
 from werkzeug.utils import secure_filename #pip install Werkzeug
 from decouple import config
 
@@ -756,4 +755,5 @@ def add_booking():
 
 if __name__ == '__main__':
     app.run(debug=True)
-    schedule.every().day.at("9:00").do(mail_sender.send_scheduled_emails)
+    schedule.every().day.at("09:00").do(mail_sender.send_scheduled_emails)
+    schedule.every().monday.do(free_day.delete_old_logs)

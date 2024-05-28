@@ -1,5 +1,5 @@
 from decouple import config
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pymysql
 
@@ -27,8 +27,8 @@ def add_free_day(company_ID, date):
         db.close()
 
     except Exception as err:
-        # gdy pojawi się jakiś błąd zwraca 0
-        return 0
+        # gdy pojawi się jakiś błąd zwraca -1
+        return -1
 
 
 #Sprawdza czy dany dzień jest dniem wolnym, zwraca 1 jeśli tak, 0 jeśli nie
@@ -79,5 +79,44 @@ def is_free_day(company_ID, date):
             return 1
     
     except Exception as err:
-        # gdy pojawi się jakiś błąd zwraca 0
-        return 0
+        # gdy pojawi się jakiś błąd zwraca -1
+        return -1
+    
+# Sprawdza czy w danym terminie jest możliwość zarezerwowania wizyty, duration musi być w minutach
+def is_booking_time_free(company_ID, date, time, duration):
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute(f"SELECT * FROM bookit_main.day_schedule WHERE company_ID = '{company_ID}' AND Date = '{date}';")
+        result = cursor.fetchall()
+        db.close()
+
+        if result['ID'] == None:
+            return 1
+        
+        time_step = timedelta(minutes=30)
+        repeat = 0
+
+        # oblicza ile razy trzeba przesunąć się o 30 minut
+        while duration > 0:
+            duration -= 30
+            repeat += 1
+
+        # źle podany czas
+        if repeat == 0:
+            return -1
+
+        # przesuwa się o 30 minut i sprawdza czy w danym czasie serwis jest dostępny
+        for i in range(repeat):
+            if result[time] == 1:
+                return 0
+            else:
+                temp = datetime.strptime(time, "%H:%M")
+                temp += time_step
+                time = temp.strftime("%H:%M")
+
+        return 1
+        
+    except Exception as err:
+        # gdy pojawi się jakiś błąd zwraca -1
+        return -1
