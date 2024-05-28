@@ -22,7 +22,7 @@ def get_db_connection():
         host = config('DB_HOST'),
         password = config('DB_PASS'),
         read_timeout = 500,
-        port = config('DB_PORT'),
+        port = int(config('DB_PORT')),
         user = config('DB_USER'),
         write_timeout = 500
     )
@@ -46,7 +46,7 @@ def get_image_cards():
     try:
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute("SELECT Name, Logo, description FROM companies;")
+        cursor.execute("SELECT Name, Logo, description FROM companies limit 5;")
         companies = cursor.fetchall()
         db.close()
 
@@ -68,6 +68,7 @@ def get_image_cards():
             })
         return jsonify({'companies': result}), 200
     except Exception as err:
+        print("Error:", str(err))
         return jsonify({'error': str(err)}), 500
 
 @app.route('/api/strona_wyszukiwania_kategorie')
