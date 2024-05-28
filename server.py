@@ -98,8 +98,129 @@ def get_cities():
         return jsonify({'cities': result}), 200
     except Exception as err:
         return jsonify({'error': str(err)}), 500
-        
     
+@app.route('/api/wyszukiwanie', methods=['POST'])
+def return_search():
+    try:
+        # pobranie danych z frontu poprzez JSON
+        kategoria = request.json.get('kategoria')
+        miasto = request.json.get('miasto')
+        sortowanie = request.json.get('sortowanie')
+        
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        if miasto == 'Wszystkie':
+            miasto = ''
+
+        if kategoria == 'Wszystkie':
+            kategoria = ''
+
+        if sortowanie == 'Najwyższa ocena':
+            cursor.execute(f"""
+                SELECT *, 
+                CASE
+                    WHEN Reviews_no > 0 THEN Sum_of_reviews / Reviews_no
+                    ELSE 0
+                END AS srednia_ocena 
+                FROM companies 
+                WHERE City LIKE '%{miasto}%' AND Category LIKE '%{kategoria}%'
+                ORDER BY srednia_ocena DESC; 
+            """) 
+        elif sortowanie == 'Najpopularniejsze':
+            cursor.execute(f"""
+                SELECT * 
+                FROM companies 
+                WHERE City LIKE '%{miasto}%' AND Category LIKE '%{kategoria}%'
+                ORDER BY Reviews_no DESC; 
+            """)
+        elif sortowanie == 'Od najnowszych':
+            cursor.execute(f"""
+                SELECT * 
+                FROM companies 
+                WHERE City LIKE '%{miasto}%' AND Category LIKE '%{kategoria}%'
+                ORDER BY ID DESC; 
+            """)
+        
+        companies = cursor.fetchall()
+        db.close()
+        
+        # Przetwarzanie wyników
+        result = []
+        for company in companies:
+            name = company['Name']
+            city = company['City']
+            address = company['Address']
+            category = company['Category']
+            reviews_no = company['Reviews_no']
+            sum_of_reviews = company['Sum_of_reviews']
+            logo = company['Logo']
+            description = company['description'] 
+            avg_rating = round(sum_of_reviews / reviews_no, 2) if reviews_no > 0 else 0
+            if logo:
+                logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
+                logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+                logo_url = f"data:image/png;base64,{logo_base64}"
+            else:
+                logo_url = None
+            result.append({
+                'name': name,
+                'logo': logo_url,
+                'description': description,
+                'category': category,
+                'address': city + ', ' + address,
+                'reviews_no': reviews_no,
+                'avg_rating': avg_rating
+            })
+        return jsonify({'companies': result}), 200
+    except Exception as err:
+        # Gdy pojawi się jakiś błąd, zwraca error
+        return jsonify({'error': str(err)}), 500 
+        
+@app.route('/api/wyszukiwanie_po_nazwie', methods=['POST'])
+def return_search_names():
+    try:
+        # pobranie danych z frontu poprzez JSON
+        nazwa = request.json.get('nazwa')
+        db = get_db_connection()
+        cursor = db.cursor()
+        cursor.execute(f"SELECT * FROM companies WHERE Name LIKE '%{nazwa}%';")
+        companies = cursor.fetchall()
+        db.close()
+        
+        # Przetwarzanie wyników
+        result = []
+        for company in companies:
+            name = company['Name']
+            city = company['City']
+            address = company['Address']
+            category = company['Category']
+            reviews_no = company['Reviews_no']
+            sum_of_reviews = company['Sum_of_reviews']
+            logo = company['Logo']
+            description = company['description'] 
+            avg_rating = round(sum_of_reviews / reviews_no, 2) if reviews_no > 0 else 0
+            if logo:
+                logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
+                logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+                logo_url = f"data:image/png;base64,{logo_base64}"
+            else:
+                logo_url = None
+            result.append({
+                'name': name,
+                'logo': logo_url,
+                'description': description,
+                'category': category,
+                'address': city + ', ' + address,
+                'reviews_no': reviews_no,
+                'avg_rating': avg_rating
+            })
+        return jsonify({'companies': result}), 200
+    except Exception as err:
+        # Gdy pojawi się jakiś błąd, zwraca error
+        print(err)
+        return jsonify({'error': str(err)}), 500 
+
 # dekorator, wpisuje się to na froncie w funkcji fetch() i wtedy jest wywoływana ta funkcja poniżej
 @app.route('/api/strona_logowania/user', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_user():
@@ -287,71 +408,6 @@ def add_service():
 
         return jsonify({'message': 'Usługa została dodana!'}), 200
     except Exception as err:
-        return jsonify({'error': str(err)}), 500
-    
-@app.route('/api/wyszukiwanie', methods=['POST'])
-def return_search():
-    try:
-        # pobranie danych z frontu poprzez JSON
-        kategoria = request.json.get('kategoria')
-        miasto = request.json.get('miasto')
-        sortowanie = request.json.get('sortowanie')
-        db = get_db_connection()
-        cursor = db.cursor()
-
-        if miasto == 'Wszystkie':
-            miasto = ''
-
-        if kategoria == 'Wszystkie':
-            kategoria = ''
-
-        if sortowanie == 'Najwyższa ocena':
-            
-            cursor.execute(f"""SELECT * 
-                            CASE
-                                WHEN Reviews_no > 0 THEN Sum_of_reviews / Reviews_no
-                                ELSE 0
-                            END AS srednia_ocena 
-                            FROM companies WHERE City = '{miasto}' AND Category = '{kategoria}' 
-                            ORDER BY srednia_ocena DESC ;""") 
-            
-        elif sortowanie == 'Najpopularniejsze':
-            cursor.execute(f"""SELECT * 
-                            FROM companies WHERE City = '{miasto}' AND Category = '{kategoria}' 
-                            ORDER BY Reviews_no DESC ;""")
-        
-        companies = cursor.fetchall()
-        db.close()
-        
-        # Przetwarzanie wyników
-        result = []
-        for company in companies:
-            name = company['Name']
-            city = company['City']
-            address = company['Address']
-            category = company['Category']
-            reviews_no = company['Reviews_no']
-            sum_of_reviews = company['Sum_of_reviews']
-            logo = company['Logo']
-            description = company['description'] 
-            if logo:
-                logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
-                logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
-                logo_url = f"data:image/png;base64,{logo_base64}"
-            else:
-                logo_url = None
-            result.append({
-                'name': name,
-                'logo': logo_url,
-                'description': description,
-                'category': category,
-                'address': city + ', ' + address,
-                'reviews_no': reviews_no,
-                'avg_rating': sum_of_reviews / reviews_no if reviews_no > 0 else 0
-            })
-        return jsonify({'companies': result}), 200
-    except Exception as err:
-        # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500
 
 @app.route('/api/firma', methods=['POST'])
