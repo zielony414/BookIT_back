@@ -32,7 +32,7 @@ def get_db_connection():
 public_email_company_reg = "contact@bury.com" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
-logged_email = "" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
+logged_email = "tajmon@gmail.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 
 # Members API route
 @app.route('/members')
@@ -553,9 +553,19 @@ def upload_file():
 
 @app.route('/edit_profile', methods=['POST'])
 def edit_profile():
+    global logged_email
 
-    if not log_as_user:
-        return jsonify({'error': 'Nie zalogowany.'}), 401
+    query = 'select * from users'
+    db = get_db_connection()
+    cursor = db.cursor()
+    cursor.execute(query)
+    db.close()
+    rows = cursor.fetchall()
+    for row in rows:
+        print(row)
+
+    #if not log_as_user:
+      #  return jsonify({'error': 'Nie zalogowany.'}), 401
 
     email = request.json.get('email')
     nrTelefonu = request.json.get('nrTelefonu')
@@ -570,18 +580,29 @@ def edit_profile():
 
     try:
         if len(nrTelefonu) > 0:
-            if not re.match(r"^\+\d{11}$", nrTelefonu):
+            if not re.match(r"^\d{9}$", nrTelefonu):
+                print("Zly format nr telefonu!")
                 return jsonify({'error': 'Nieprawidłowy format numeru telefonu.'}), 400
 
             else:
-                query = 'UPDATE users SET tel_nr = ? WHERE email = ?', (nrTelefonu, logged_email)
-                cursor.execute(query)
+                db = get_db_connection()
+                cursor = db.cursor()
+
+                query = "UPDATE users SET tel_nr = %s WHERE email = %s"
+
+                cursor.execute(query, (nrTelefonu, logged_email))
+
+                db.commit()
+                db.close()
+
                 print("zaktualizowano numer telefonu!")
 
         if miasto and len(miasto) > 0:
             if not re.match(r"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\- ]+$", miasto):
                 return jsonify({'error': 'Nieprawidłowa nazwa miasta.'}), 400
             cursor.execute('UPDATE users SET city = ? WHERE email = ?', (miasto, logged_email))
+            db.commit()
+            db.close()
             print("zaktualizowano miasto!")
 
         if len(plec) == 0:
@@ -589,6 +610,7 @@ def edit_profile():
             db = get_db_connection()
             cursor = db.cursor()
             cursor.execute(query)
+            db.commit()
             db.close()
             print("zaktualizowano plec, jestes chlopem!")
         else:
