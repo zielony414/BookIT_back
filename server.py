@@ -579,6 +579,7 @@ def edit_profile():
     cursor = db.cursor()
 
     try:
+        #dziala
         if len(nrTelefonu) > 0:
             if not re.match(r"^\d{9}$", nrTelefonu):
                 print("Zly format nr telefonu!")
@@ -587,55 +588,47 @@ def edit_profile():
             else:
                 db = get_db_connection()
                 cursor = db.cursor()
-
                 query = "UPDATE users SET tel_nr = %s WHERE email = %s"
-
                 cursor.execute(query, (nrTelefonu, logged_email))
-
                 db.commit()
                 db.close()
-
                 print("zaktualizowano numer telefonu!")
 
+        #dziala
         if miasto and len(miasto) > 0:
             if not re.match(r"^[a-zA-ZąćęłńóśźżĄĆĘŁŃÓŚŹŻ\- ]+$", miasto):
                 return jsonify({'error': 'Nieprawidłowa nazwa miasta.'}), 400
-            cursor.execute('UPDATE users SET city = ? WHERE email = ?', (miasto, logged_email))
+            db = get_db_connection()
+            cursor = db.cursor()
+
+            query = "UPDATE users SET address = %s where email = %s"
+            cursor.execute(query, (miasto, logged_email))
             db.commit()
             db.close()
             print("zaktualizowano miasto!")
 
-        if len(plec) == 0:
-            query = f'UPDATE users SET gender = {plec} WHERE email = {logged_email};'
-            db = get_db_connection()
-            cursor = db.cursor()
-            cursor.execute(query)
-            db.commit()
-            db.close()
-            print("zaktualizowano plec, jestes chlopem!")
-        else:
-            query = f'UPDATE users SET gender = {plec} WHERE email = {logged_email};'
-            db = get_db_connection()
-            cursor = db.cursor()
-            cursor.execute(query)
-            db.close()
-            print("zaktualizowano plec, jestes baba!")
+        #nie dziala
 
+
+        #dziala
         if len(stareHaslo) > 0 and len(noweHaslo) > 0 and len(powtorzNoweHaslo) > 0:
             #wyciaganie starego hasla z bazy
-            query = f'SELECT password FROM users WHERE email = {logged_email};'
             db = get_db_connection()
             cursor = db.cursor()
-            cursor.execute(query)
-            haslo = cursor.fetchone()
+            query = "SELECT password FROM users WHERE email = %s"
+            cursor.execute(query, (logged_email))
+            haslo = cursor.fetchall()
+            haslo = haslo[0]['password']
+            print(haslo)
             db.close()
-
             #jesli stareHaslo sie zgadza z haslem w bazie
             if stareHaslo == haslo and noweHaslo == powtorzNoweHaslo:
-                query = f'UPDATE users SET password = {noweHaslo} WHERE email = {logged_email};'
+                print("tu jestem")
                 db = get_db_connection()
                 cursor = db.cursor()
-                cursor.execute(query)
+                query = "UPDATE users SET password = %s WHERE email = %s"
+                cursor.execute(query, (noweHaslo, logged_email))
+                db.commit()
                 db.close()
                 print("zaktualizowano haslo!")
 
@@ -643,12 +636,12 @@ def edit_profile():
         if email and len(email) > 0:
             if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
                 return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
-            cursor.execute('UPDATE users SET email = ? WHERE email = ?', (email, logged_email))
+            query = "UPDATE users SET email = %s where email = %s"
+            cursor.execute(query, (email, logged_email))
+            db.commit()
             print("Email zaktualizowany pomyślnie")
             logged_email = email
 
-        db.commit()
-        db.close()
         return jsonify({'message': 'Profil zaktualizowany pomyślnie.'}), 200
 
 
