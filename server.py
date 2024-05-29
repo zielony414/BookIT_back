@@ -32,7 +32,7 @@ def get_db_connection():
 public_email_company_reg = "contact@bury.com" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
-logged_email = "tajmon@gmail.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
+logged_email = "tajman@gmail.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 
 # Members API route
 @app.route('/members')
@@ -577,7 +577,6 @@ def edit_profile():
 
     db = get_db_connection()
     cursor = db.cursor()
-
     try:
         #dziala
         if len(nrTelefonu) > 0:
@@ -607,7 +606,25 @@ def edit_profile():
             db.close()
             print("zaktualizowano miasto!")
 
-        #nie dziala
+        #dziala
+        if len(plec)>0:
+            if plec == 'Mezczyzna':
+                #zmiana w chlopa
+                db = get_db_connection()
+                cursor = db.cursor()
+                query = "UPDATE users SET gender = %s where email = %s"
+                cursor.execute(query, (0, logged_email))
+                db.commit()
+                db.close()
+                print("zaktualizowano w chlopa!")
+            else:
+                db = get_db_connection()
+                cursor = db.cursor()
+                query = "UPDATE users SET gender = %s where email = %s"
+                cursor.execute(query, (1, logged_email))
+                db.commit()
+                db.close()
+                print("zaktualizowano w babe!")
 
 
         #dziala
