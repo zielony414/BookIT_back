@@ -778,4 +778,4 @@ def add_booking():
 if __name__ == '__main__':
     app.run(debug=True)
     schedule.every().day.at("09:00").do(mail_sender.send_scheduled_emails)
-    schedule.every().monday.do(free_day.delete_old_logs)
+    schedule.every().monday.do(mail_sender.delete_old_logs)

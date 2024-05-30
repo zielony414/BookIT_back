@@ -77,7 +77,7 @@ def send_scheduled_emails():
                     print("Błąd przy czytaniu danych do wysyłki", line)
 
     except FileNotFoundError:
-        print(f"Plik {"scheduled_emails.txt"} nie został znaleziony.")
+        print(f"Plik scheduled_emails.txt nie został znaleziony.")
     except Exception as e:
         print(f"Wystąpił błąd: {e}")
 
