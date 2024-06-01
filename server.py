@@ -742,38 +742,155 @@ def get_services_by_company_id():
     finally:
         db.close()
 
+@app.route('/api/user_info')
+def get_user_info_by_id():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        user_id = request.args.get('user_id')
+        if not user_id:
+            return jsonify({"error": "Missing user_id"}), 400
+
+        query = "SELECT ID, email, password, tel_nr, gender, address FROM users WHERE ID = %s"
+        cursor.execute(query, (user_id,))
+        
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        user_info = {
+            "id": user['ID'],
+            "email": user['email'], 
+            "password": user['password'], 
+            "tel_nr": user['tel_nr'],
+            "gender": user['gender'],
+            "address": user['address']
+        }
+
+        return jsonify(user_info)
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
 @app.route('/api/add_booking', methods=['POST'])
 def add_booking():
     try:
         db = get_db_connection()
         cursor = db.cursor()
 
-        data = request.json
-        print("Received data:", data)
+        data = request.json    
 
         company_id = data['company_id']
         user_id = data['user_id']
-        service_id = data['service_id']
-        booking_time = data['booking_time']
+        service_id = data['service_id']        
+        booking_datetime = data['booking_datetime']
         confirm_mail = data['confirm_mail']
         reminder_mail = data['reminder_mail']
         confirm_sms = data['confirm_sms']
         reminder_sms = data['reminder_sms']
 
-        query = """
-            INSERT INTO bookings (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-        """
-        cursor.execute(query, (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms))
-        db.commit()
+        if free_day.is_free_day(company_id, booking_datetime):
+            query = """
+                INSERT INTO bookings (company_id, user_id, service_id, booking_datetime, confirm_mail, reminder_mail, confirm_sms, reminder_sms)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, (company_id, user_id, service_id, booking_datetime, confirm_mail, reminder_mail, confirm_sms, reminder_sms))
+            db.commit()
 
-        return jsonify({"message": "Booking added successfully"}), 201
+            print("Executing query: ", query)
+
+            return jsonify({"message": "Booking added successfully"}), 201
+        else:
+            print("Not a free day for booking")
+            return jsonify({"message": "That day is not free"}), 201
+
     except Exception as e:
         print("Error:", str(e))
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
 
+
+@app.route('/api/add_to_day_schedule', methods=['POST'])
+def add_to_day_schedule():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        data = request.json
+        print("Received data: ", data)
+
+        company_id = data['company_id']
+        booking_date = data['date']  # 'YYYY-MM-DD' format
+        booking_time = data['time']  # 'HH:MM' format
+        total_time_minutes = data['totalTime']  # Total time in minutes
+
+        # Calculate the number of slots to fill
+        slots_to_fill = total_time_minutes // 30
+        if total_time_minutes % 30 != 0:
+            slots_to_fill += 1
+
+        # Calculate the start and end slots
+        start_time = datetime.strptime(booking_time, '%H:%M')
+        end_time = start_time + timedelta(minutes=total_time_minutes)
+
+        # Check if the record for the given date already exists
+        cursor.execute("SELECT id FROM day_schedule WHERE company_id = %s AND Date = %s", (company_id, booking_date))
+        record = cursor.fetchone()
+        print("Record found: ", record)
+        i = 0
+        if free_day.is_free_day(company_id, booking_date):
+            if record:
+                # Update existing record
+                current_time = start_time                
+                while current_time < end_time:          
+                    i = i + 1
+                                  
+                    slot_column = current_time.strftime('%H:%M')
+                    query = f"""
+                        UPDATE day_schedule
+                        SET `{slot_column}` = 1
+                        WHERE company_ID = {company_id} AND Date = '{booking_date}'
+                    """
+                    
+                    cursor.execute(query)
+                    record = cursor.fetchone()
+                    print("Record found: ", record)
+                    current_time += timedelta(minutes=30)        
+                db.commit()                            
+                return jsonify({"message": "Day schedule updated successfully"}), 201
+                
+            else:
+                # Insert new record
+                columns = ["company_id", "Date"] + [start_time.strftime('`%H:%M`')]
+                values = [company_id, f"'{booking_date}'", 1]
+                current_time = start_time + timedelta(minutes=30)
+
+                while current_time < end_time:
+                    columns.append(current_time.strftime('`%H:%M`'))
+                    values.append(1)
+                    current_time += timedelta(minutes=30)
+
+                query = f"""
+                    INSERT INTO day_schedule ({', '.join(columns)})
+                    VALUES ({', '.join(map(str, values))})
+                """
+                print("Executing query: ", query)
+                cursor.execute(query)
+                print("Insertion successful")  
+                db.commit()                      
+                return jsonify({"message": "Day schedule updated successfully"}), 201
+        else:            
+            return jsonify({"message": "That day is not free"}), 201
+
+    except Exception as e:
+        print("Error: ", str(e))
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
 
 if __name__ == '__main__':
     app.run(debug=True)
