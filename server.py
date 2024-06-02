@@ -27,7 +27,7 @@ def get_db_connection():
         write_timeout = 500
     )
 
-public_email_company_reg = "contact@bury.com" # zmienna potrzebna do rejestracji firmy
+public_email_company_reg = "contact@barber.pl" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
 logged_email = "kontakt@romper.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
@@ -253,15 +253,21 @@ def logging_in_user():
 def register_user():
     try:
         # Pobierz dane z żądania
-        name = request.json.get('name')
+        #name = request.json.get('name')
+        #print(name)
         email = request.json.get('email')
+        #print(email)
         password = request.json.get('password')
+        #print(password)
         tel_nr = request.json.get('phone')
+        #print(tel_nr)
         gender = request.json.get('gender')
-        address = request.json.get('address')
+        #print(gender)
+        address = request.json.get('city')
+        #print(address)
 
         # Sprawdź, czy wszystkie pola są obecne
-        if not all([name, email, password, tel_nr, gender, address]):
+        if not all([email, password, tel_nr, gender, address]):
             return jsonify({'error': 'Wszystkie pola są obowiązkowe.'}), 400
 
         # Walidacja emaila
@@ -290,10 +296,10 @@ def register_user():
         # Wstawianie danych do bazy danych
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute("""
-            INSERT INTO users (name, email, password, tel_nr, gender, address) 
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (name, email, password, tel_nr, gender, address))
+        cursor.execute(f"""
+            INSERT INTO users (email, password, tel_nr, gender, address)
+            VALUES ('{email}', '{password}', {tel_nr}, {gender_value}, '{address}');
+        """)
         
         db.commit()  
         db.close()
@@ -338,44 +344,66 @@ def registration_company():
         if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
             return jsonify({'error': 'Nieprawidłowy format emaila.'}), 401
         public_email_company_reg = email
+        #print("email: " + email)
         password = request.json.get('password')
+        #print(password)
         company_name = request.json.get('company_name')
+        #print(company_name)
         phone = request.json.get('phone')
+        #print(phone)
         description = request.json.get('description')
+        #print(description)
         nip = request.json.get('nip')
-        category = request.json.get('category')
-        type_of_servise = request.json.get('type_of_servise')
+        #print(nip)
+        #category = request.json.get('category')
+        category = "uroda"
+        #type_of_servise = request.json.get('stacjonarnie')
+        if request.json.get('stacjonarnie') == True:
+            type_of_servise = 0
+        else:
+            type_of_servise = 1
+        #print(type_of_servise)
         street_number = request.json.get('street_number')
+        #print(street_number)
         city = request.json.get('city')
+        #print(city)
         post_code = request.json.get('post_code')
+        #print(post_code)
         link_page = request.json.get('link_page')
+        #print(link_page)
         facebook = request.json.get('facebook')
-        tt = request.json.get('tt')
+        #print(facebook)
+        tt = request.json.get('tiktok')
+        #print(tt)
         linkedin = request.json.get('linkedin')
+        #print(linkedin)
         instagram = request.json.get('instagram')
+        #print(instagram)
         twitter = request.json.get('twitter')
-        pon_start = request.json.get('pon_start')
-        pon_stop = request.json.get('pon_stop')
-        wt_start = request.json.get('wt_start')
-        wt_stop = request.json.get('wt_stop')
-        sr_start = request.json.get('sr_start')
-        sr_stop = request.json.get('sr_stop')
-        czw_start = request.json.get('czw_start')
-        czw_stop = request.json.get('czw_stop')
-        pt_start = request.json.get('pt_start')
-        pt_stop = request.json.get('pt_stop')
-        sob_start = request.json.get('sob_start')
-        sob_stop = request.json.get('sob_stop')
-        nd_start = request.json.get('nd_start')
-        nd_stop = request.json.get('nd_stop')
+        #print(twitter)
+        pon_start = request.json.get('workingHours').get('monday').get('open')
+        #print("pon " + pon_start)
+        pon_stop = request.json.get('workingHours').get('monday').get('close')
+        wt_start = request.json.get('workingHours').get('tuesday').get('open')
+        wt_stop = request.json.get('workingHours').get('tuesday').get('close')
+        sr_start = request.json.get('workingHours').get('wednesday').get('open')
+        sr_stop = request.json.get('workingHours').get('wednesday').get('close')
+        czw_start = request.json.get('workingHours').get('thursday').get('open')
+        czw_stop = request.json.get('workingHours').get('thursday').get('close')
+        pt_start = request.json.get('workingHours').get('friday').get('open')
+        pt_stop = request.json.get('workingHours').get('friday').get('close')
+        sob_start = request.json.get('workingHours').get('saturday').get('open')
+        sob_stop = request.json.get('workingHours').get('saturday').get('close')
+        nd_start = request.json.get('workingHours').get('sunday').get('open')
+        nd_stop = request.json.get('workingHours').get('sunday').get('close')
 
         # poprawić #Logo i #Sector bo też nie wiem co to
         db = get_db_connection()
         cursor = db.cursor()
         cursor.execute(f"""INSERT INTO companies (Name, City, Address, Logo, Category, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link,
-                    Tiktok_link, Reviews_no, Sum_of_reviews, NIP, tel_nr, description, email, type_of_service, password) 
-                    VALUES ('{company_name}', '{city}', '{post_code} {street_number}', '0', '{category}', '{link_page}', '{facebook}', '{linkedin}', 
-                    '{instagram}', '{twitter}', '{tt}', 0, 0, '{nip}', '{phone}', '{description}', '{email}', '{type_of_servise}', '{password}');""")
+                   Tiktok_link, Reviews_no, Sum_of_reviews, NIP, tel_nr, description, email, type_of_service, password) 
+                   VALUES ('{company_name}', '{city}', '{post_code} {street_number}', '0', '{category}', '{link_page}', '{facebook}', '{linkedin}', 
+                   '{instagram}', '{twitter}', '{tt}', 0, 0, {nip}, {phone}, '{description}', '{email}', {type_of_servise}, '{password}');""")
 
         cursor.execute(f"""INSERT INTO opening_hours (company_id, monday_start, monday_end, tuesday_start, tuesday_end, wensday_start, wensday_end, thursday_start, thursday_end, friday_start, friday_end, saturday_start, saturday_end, sunday_start, sunday_end) 
               VALUES ( (SELECT ID FROM companies WHERE (email='{email}')), '{pon_start}', '{pon_stop}', '{wt_start}', '{wt_stop}', '{sr_start}', '{sr_stop}', '{czw_start}', '{czw_stop}', '{pt_start}', '{pt_stop}', '{sob_start}', '{sob_stop}', '{nd_start}', '{nd_stop}');""")
@@ -392,17 +420,25 @@ def add_service():
     global public_email_company_reg
     try:
         name = request.json.get('name')
+        #print(name)
         type = request.json.get('type')
+        #print(type)
         description = request.json.get('description')
-        hours = request.json.get('hours')
-        minutes = request.json.get('minutes')
+        #print(description)
+        hours = request.json.get('duration')
+        #print(hours)
         price = request.json.get('price')
+        #print(price)
+        if request.json.get('isApproximate') == True:
+            isAprox = 0
+        else:
+            isAprox = 1
 
         # poprawić approximate_cost bo niewiem co to jest i dodać typ usługi 
         db = get_db_connection()
         cursor = db.cursor()
         cursor.execute(f"""INSERT INTO services (company_ID, category, service_name, cost, approximate_cost, execution_time, additional_info) 
-                       VALUES ((SELECT ID FROM companies WHERE (email='{public_email_company_reg}')), '{type}', '{name}', '{price}', '0', '{hours * 60 + minutes}', '{description}');""")
+                       VALUES ((SELECT ID FROM companies WHERE (email='{public_email_company_reg}')), '{type}', '{name}', {price}, {isAprox}, {hours}, '{description}');""")
         db.commit()
         db.close()
 
