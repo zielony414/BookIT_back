@@ -39,7 +39,7 @@ def members():
 
 @app.route('/api/nav_items')
 def get_nav_items():
-    return {"nav_items": ["Barber", "Salon kosmetyczny", "Paznokcie", "Masaż", "Zwierzęta", "Siłownia", "Więcej..."]}
+    return {"nav_items": ["Fryzjer", "Uroda", "Masaż", "Zwierzęta", "Siłownia", "Więcej..."]}
 
 @app.route('/api/image_cards')
 def get_image_cards():
@@ -113,7 +113,7 @@ def return_search():
         if miasto == 'Wszystkie':
             miasto = ''
 
-        if kategoria == 'Wszystkie':
+        if kategoria == 'Wszystkie' or kategoria == 'Więcej...':
             kategoria = ''
 
         if sortowanie == 'Najwyższa ocena':
@@ -211,7 +211,7 @@ def return_search_names():
                 'logo': logo_url,
                 'description': description,
                 'category': category,
-                'address': city + ', ' + address,
+                'address': city + ',     ' + address,
                 'reviews_no': reviews_no,
                 'avg_rating': avg_rating
             })
