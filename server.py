@@ -32,7 +32,7 @@ def get_db_connection():
 public_email_company_reg = "contact@bury.com" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
-logged_email = "kontakt@romper.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
+logged_email = "konrad@konrad.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 
 # Members API route
 @app.route('/members')
@@ -651,10 +651,31 @@ def edit_profile():
 
         return jsonify({'message': 'Profil zaktualizowany pomyślnie.'}), 200
 
-
     except Exception as err:
         print("Nie udało się zaktualizować profilu:", str(err))
         return jsonify({'error': 'Wystąpił błąd.'}), 500
+
+@app.route('/api/user_reservations')
+def get_user_reservations():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        query = """SELECT companies.name, companies.Address, services.service_name, services.cost, bookings.booking_time
+                 FROM users
+                 join bookings on users.id = bookings.user_ID
+                 join services on services.id = bookings.service_ID
+                 join companies on companies.id = services.company_ID
+                 WHERE users.email = %s
+                 """
+
+        cursor.execute(query, (logged_email))
+        all_reservations = cursor.fetchall()
+        db.close()
+
+        return jsonify(all_reservations), 200
+    except Exception as err:
+        return jsonify({'error': str(err)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
