@@ -27,7 +27,7 @@ def get_db_connection():
         write_timeout = 500
     )
 
-public_email_company_reg = "contact@barber.pl" # zmienna potrzebna do rejestracji firmy
+public_email_company_reg = "" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
 logged_email = "kontakt@romper.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
@@ -345,18 +345,23 @@ def registration_company():
             return jsonify({'error': 'Nieprawidłowy format emaila.'}), 401
         public_email_company_reg = email
         #print("email: " + email)
+        #print("email gloabal:" + public_email_company_reg)
         password = request.json.get('password')
         #print(password)
         company_name = request.json.get('company_name')
         #print(company_name)
         phone = request.json.get('phone')
+        if int(phone) > 999999999:
+             return jsonify({'error': str(err)}), 401
         #print(phone)
         description = request.json.get('description')
         #print(description)
         nip = request.json.get('nip')
+        if int(nip) > 9999999999:
+             return jsonify({'error': str(err)}), 402 
         #print(nip)
         category = request.json.get('type')
-        print(category)
+        #print(category)
         #type_of_servise = request.json.get('stacjonarnie')
         if request.json.get('stacjonarnie') == True:
             type_of_servise = 0
@@ -404,7 +409,8 @@ def registration_company():
                    Tiktok_link, Reviews_no, Sum_of_reviews, NIP, tel_nr, description, email, type_of_service, password) 
                    VALUES ('{company_name}', '{city}', '{post_code} {street_number}', '0', '{category}', '{link_page}', '{facebook}', '{linkedin}', 
                    '{instagram}', '{twitter}', '{tt}', 0, 0, {nip}, {phone}, '{description}', '{email}', {type_of_servise}, '{password}');""")
-
+        
+        #print("przeszlow")
         cursor.execute(f"""INSERT INTO opening_hours (company_id, monday_start, monday_end, tuesday_start, tuesday_end, wensday_start, wensday_end, thursday_start, thursday_end, friday_start, friday_end, saturday_start, saturday_end, sunday_start, sunday_end) 
               VALUES ( (SELECT ID FROM companies WHERE (email='{email}')), '{pon_start}', '{pon_stop}', '{wt_start}', '{wt_stop}', '{sr_start}', '{sr_stop}', '{czw_start}', '{czw_stop}', '{pt_start}', '{pt_stop}', '{sob_start}', '{sob_stop}', '{nd_start}', '{nd_stop}');""")
         db.commit()
@@ -425,7 +431,10 @@ def add_service():
         #print(type)
         description = request.json.get('description')
         #print(description)
-        hours = request.json.get('duration')
+        minuts = request.json.get('duration')
+        hours = minuts // 60
+        minuty = minuts % 60
+        sekundy = 0
         #print(hours)
         price = request.json.get('price')
         #print(price)
@@ -433,12 +442,15 @@ def add_service():
             isAprox = 0
         else:
             isAprox = 1
+        #print(isAprox)
 
         # poprawić approximate_cost bo niewiem co to jest i dodać typ usługi 
         db = get_db_connection()
         cursor = db.cursor()
+        #print("123")
         cursor.execute(f"""INSERT INTO services (company_ID, category, service_name, cost, approximate_cost, execution_time, additional_info) 
-                       VALUES ((SELECT ID FROM companies WHERE (email='{public_email_company_reg}')), '{type}', '{name}', {price}, {isAprox}, {hours}, '{description}');""")
+                       VALUES ((SELECT ID FROM companies WHERE (email='{public_email_company_reg}')), '{type}', '{name}', {price}, {isAprox}, '{hours:02}:{minuty:02}:{sekundy:02}', '{description}');""")
+        #print("456")
         db.commit()
         db.close()
 
@@ -602,6 +614,7 @@ def allowed_file(filename):
   
 @app.route('/api/strona_rejestracji_firmy/zdjecia', methods=['POST'])
 def upload_file():
+    global public_email_company_reg
     if 'files[]' not in request.files:
         resp = jsonify({
                 "message":'No file part in the request',
