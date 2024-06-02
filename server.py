@@ -657,23 +657,29 @@ def edit_profile():
 
 @app.route('/api/user_reservations')
 def get_user_reservations():
-    try:
+    def send_bookings_query():
         db = get_db_connection()
         cursor = db.cursor()
 
         query = """SELECT companies.name, companies.Address, services.service_name, services.cost, bookings.booking_time
-                 FROM users
-                 join bookings on users.id = bookings.user_ID
-                 join services on services.id = bookings.service_ID
-                 join companies on companies.id = services.company_ID
-                 WHERE users.email = %s
-                 """
+                         FROM users
+                         join bookings on users.id = bookings.user_ID
+                         join services on services.id = bookings.service_ID
+                         join companies on companies.id = services.company_ID
+                         WHERE users.email = %s
+                         """
 
         cursor.execute(query, (logged_email))
-        all_reservations = cursor.fetchall()
+        all_bookings = cursor.fetchall()
         db.close()
 
-        return jsonify(all_reservations), 200
+        return all_bookings
+
+
+    try:
+        all_bookings = send_bookings_query()
+        return jsonify(all_bookings), 200
+
     except Exception as err:
         return jsonify({'error': str(err)}), 500
 
