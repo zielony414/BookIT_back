@@ -355,8 +355,8 @@ def registration_company():
         #print(description)
         nip = request.json.get('nip')
         #print(nip)
-        #category = request.json.get('category')
-        category = "uroda"
+        category = request.json.get('type')
+        print(category)
         #type_of_servise = request.json.get('stacjonarnie')
         if request.json.get('stacjonarnie') == True:
             type_of_servise = 0
