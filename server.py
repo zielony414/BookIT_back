@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from datetime import datetime, timedelta
 import pymysql
 import base64
 import re
@@ -778,6 +779,7 @@ def get_user_info_by_id():
 @app.route('/api/add_booking', methods=['POST'])
 def add_booking():
     try:
+        print("TERAZ WYKONUJE ADD BOOKING")
         db = get_db_connection()
         cursor = db.cursor()
 
@@ -785,22 +787,28 @@ def add_booking():
 
         company_id = data['company_id']
         user_id = data['user_id']
-        service_id = data['service_id']        
+        service_id = data['service_id']
         booking_datetime = data['booking_datetime']
+        booking_date = data['booking_date']
         confirm_mail = data['confirm_mail']
         reminder_mail = data['reminder_mail']
         confirm_sms = data['confirm_sms']
         reminder_sms = data['reminder_sms']
+        booking_time = data['time'] 
+        total_time_minutes = data['totalTime'] 
 
-        if free_day.is_free_day(company_id, booking_datetime):
+        start_time = datetime.strptime(booking_time, '%H:%M')
+        end_time = start_time + timedelta(minutes=total_time_minutes)
+                
+        if free_day.is_free_day(company_id, booking_date, start_time, end_time) and free_day.is_booking_time_free(company_id, booking_date, booking_time, total_time_minutes):
             query = """
-                INSERT INTO bookings (company_id, user_id, service_id, booking_datetime, confirm_mail, reminder_mail, confirm_sms, reminder_sms)
+                INSERT INTO bookings (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.execute(query, (company_id, user_id, service_id, booking_datetime, confirm_mail, reminder_mail, confirm_sms, reminder_sms))
             db.commit()
 
-            print("Executing query: ", query)
+            print("Executing query booking: ", query)
 
             return jsonify({"message": "Booking added successfully"}), 201
         else:
@@ -808,7 +816,7 @@ def add_booking():
             return jsonify({"message": "That day is not free"}), 201
 
     except Exception as e:
-        print("Error:", str(e))
+        print("Error in booking:", str(e))
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
@@ -816,12 +824,11 @@ def add_booking():
 
 @app.route('/api/add_to_day_schedule', methods=['POST'])
 def add_to_day_schedule():
-    try:
+    try:        
         db = get_db_connection()
         cursor = db.cursor()
 
-        data = request.json
-        print("Received data: ", data)
+        data = request.json    
 
         company_id = data['company_id']
         booking_date = data['date']  # 'YYYY-MM-DD' format
@@ -833,16 +840,17 @@ def add_to_day_schedule():
         if total_time_minutes % 30 != 0:
             slots_to_fill += 1
 
+        
         # Calculate the start and end slots
         start_time = datetime.strptime(booking_time, '%H:%M')
         end_time = start_time + timedelta(minutes=total_time_minutes)
-
+        
         # Check if the record for the given date already exists
         cursor.execute("SELECT id FROM day_schedule WHERE company_id = %s AND Date = %s", (company_id, booking_date))
         record = cursor.fetchone()
-        print("Record found: ", record)
-        i = 0
-        if free_day.is_free_day(company_id, booking_date):
+
+        i = 0 #DEbug
+        if free_day.is_free_day(company_id, booking_date, start_time, end_time) and free_day.is_booking_time_free(company_id, booking_date, booking_time, total_time_minutes):
             if record:
                 # Update existing record
                 current_time = start_time                
@@ -856,9 +864,8 @@ def add_to_day_schedule():
                         WHERE company_ID = {company_id} AND Date = '{booking_date}'
                     """
                     
-                    cursor.execute(query)
-                    record = cursor.fetchone()
-                    print("Record found: ", record)
+                    cursor.execute(query)                    
+                    record = cursor.fetchone()                    
                     current_time += timedelta(minutes=30)        
                 db.commit()                            
                 return jsonify({"message": "Day schedule updated successfully"}), 201
@@ -878,7 +885,7 @@ def add_to_day_schedule():
                     INSERT INTO day_schedule ({', '.join(columns)})
                     VALUES ({', '.join(map(str, values))})
                 """
-                print("Executing query: ", query)
+                print("Executing query schedule: ", query)
                 cursor.execute(query)
                 print("Insertion successful")  
                 db.commit()                      
@@ -887,7 +894,7 @@ def add_to_day_schedule():
             return jsonify({"message": "That day is not free"}), 201
 
     except Exception as e:
-        print("Error: ", str(e))
+        print("Error schedule: ", str(e))
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
