@@ -6,6 +6,10 @@ import traceback #do usunięcia
 from datetime import timedelta
 import datetime
 
+import traceback #do usunięcia
+from datetime import timedelta
+import datetime
+
 app = Flask(__name__)
 
 #----------------------------------------------------------------------------------------------------------------------
@@ -555,6 +559,150 @@ def return_company_hours():
         }
 
         return jsonify(result), 200
+    except Exception as err:
+        print(err)
+        traceback.print_exc()
+        return jsonify({'error': str(err)}), 500
+
+
+@app.route('/api/Strona_zarządzania_firmą/update', methods=['PUT'])
+def update_company_details():
+    try:
+        data = request.json
+        company_id = data.get('company_id')
+        field = data.get('field')
+        value = data.get('value')
+
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Dynamically create the SQL query
+        sql_query = f"UPDATE companies SET {field} = %s WHERE ID = %s"
+        cursor.execute(sql_query, (value, company_id))
+
+        db.commit()
+        db.close()
+
+        return jsonify({'message': 'Company details updated successfully'}), 200
+    except Exception as err:
+        return jsonify({'error': str(err)}), 500
+
+
+@app.route('/api/Strona_zarządzania_firmą/reservations', methods=['POST'])
+def get_reservations():
+    try:
+        data = request.json
+        company_id = data.get('company_id')
+        date = data.get('date')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT 
+                b.booking_time,
+                s.service_name,
+                s.category,
+                s.execution_time,
+                s.additional_info,
+                u.email,
+                u.tel_nr
+            FROM 
+                bookit_main.bookings b
+            INNER JOIN 
+                bookit_main.services s ON b.service_ID = s.ID
+            INNER JOIN
+                bookit_main.users u ON b.user_ID = u.ID
+            WHERE 
+                b.company_ID = %s AND DATE(b.booking_time) = %s
+            """,
+            (company_id, date)
+        )
+        reservations = cursor.fetchall()
+        conn.close()
+
+        if not reservations:
+            return jsonify({'error': 'Reservations not found'}), 404
+
+        result = []
+        for res in reservations:
+            booking_time = res['booking_time']
+            godzina = f"{booking_time.hour:02}:{booking_time.minute:02}"
+
+            execution_time = res['execution_time']
+            if isinstance(execution_time, timedelta):
+                execution_time_minutes = execution_time.total_seconds() / 60
+            else:
+                execution_time_minutes = execution_time / 60
+
+            result.append({
+                'booking_time': godzina,
+                'service_name': res['service_name'],
+                'category': res['category'],
+                'execution_time': execution_time_minutes,
+                'opis': res['additional_info'],
+                'email': res['email'],
+                'sms': res['tel_nr']
+            })
+
+        return jsonify(result), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+
+@app.route('/api/update_company_hours', methods=['POST'])
+def update_company_hours():
+    try:
+        data = request.json
+        company_id = data.get('company_id')
+        hours = data.get('hours')
+
+        print('Received data:', data)  # Dodaj ten wiersz
+        if not company_id or not hours:
+            return jsonify({'error': 'Missing company_id or hours data'}), 400
+
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        query = """
+            UPDATE bookit_main.opening_hours
+            SET monday_start = %s,
+                monday_end = %s,
+                tuesday_start = %s,
+                tuesday_end = %s,
+                wensday_start = %s,
+                wensday_end = %s,
+                thursday_start = %s,
+                thursday_end = %s,
+                friday_start = %s,
+                friday_end = %s,
+                saturday_start = %s,
+                saturday_end = %s,
+                sunday_start = %s,
+                sunday_end = %s
+            WHERE company_id = %s
+        """
+        values = (
+            hours['monday_start'], hours['monday_end'],
+            hours['tuesday_start'], hours['tuesday_end'],
+            hours['wensday_start'], hours['wensday_end'],
+            hours['thursday_start'], hours['thursday_end'],
+            hours['friday_start'], hours['friday_end'],
+            hours['saturday_start'], hours['saturday_end'],
+            hours['sunday_start'], hours['sunday_end'],
+            company_id
+        )
+
+        print('Executing query:', query % values)  # Dodaj ten wiersz
+
+        cursor.execute(query, values)
+        db.commit()
+        db.close()
+
+        return jsonify({'message': 'Company hours updated successfully'}), 200
     except Exception as err:
         print(err)
         traceback.print_exc()
