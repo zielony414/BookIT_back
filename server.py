@@ -556,7 +556,6 @@ def edit_profile():
     if not log_as_user:
       return jsonify({'error': 'Nie zalogowany.'}), 401
 
-
     global logged_email
 
     db = get_db_connection()
@@ -661,23 +660,36 @@ def get_user_reservations():
         db = get_db_connection()
         cursor = db.cursor()
 
-        query = """SELECT companies.name, companies.Address, services.service_name, services.cost, bookings.booking_time
-                         FROM users
-                         join bookings on users.id = bookings.user_ID
-                         join services on services.id = bookings.service_ID
-                         join companies on companies.id = services.company_ID
-                         WHERE users.email = %s
-                         """
+        query = """SELECT companies.name AS businessName, companies.Address AS location, services.service_name AS service, services.cost AS price, bookings.booking_time AS date
+                                 FROM users
+                                 JOIN bookings ON users.id = bookings.user_ID
+                                 JOIN services ON services.id = bookings.service_ID
+                                 JOIN companies ON companies.id = services.company_ID
+                                 WHERE users.email = %s
+                                 """
 
-        cursor.execute(query, (logged_email))
+        cursor.execute(query, (logged_email,))
         all_bookings = cursor.fetchall()
         db.close()
 
-        return all_bookings
+        # Zmiana nazw kluczy i formatowanie daty
+        formatted_bookings = []
+        for booking in all_bookings:
+            formatted_booking = {
+                'businessName': booking['businessName'],
+                'location': booking['location'],
+                'service': booking['service'],
+                'price': booking['price'],
+                'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S')  # Formatowanie daty do stringa
+            }
+            formatted_bookings.append(formatted_booking)
 
+        return formatted_bookings
 
     try:
         all_bookings = send_bookings_query()
+        for res in all_bookings:
+            print(res)
         return jsonify(all_bookings), 200
 
     except Exception as err:
