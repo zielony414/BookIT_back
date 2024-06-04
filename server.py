@@ -231,6 +231,7 @@ def return_search_names():
 @app.route('/api/strona_logowania/user', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_user():
     global log_as_user, log_as_company, logged_email
+    print(logged_email)
     try:
         # pobranie danych z frontu poprzez JSON
         login = request.json.get('user_login') # pola podane przez front muszą nazywać się user_login i user_password
@@ -247,6 +248,7 @@ def logging_in_user():
             log_as_user = True
             log_as_company = False
             logged_email = login
+            print(logged_email)
             return jsonify({'message': 'Zalogowano pomyślnie!', 'username': login}), 200
         else:
             return jsonify({'message': 'Niepoprawne dane logowania!'}), 401
@@ -1119,8 +1121,6 @@ def get_user_reservations():
                 'booking_id': booking['booking_id']
             }
             formatted_bookings.append(formatted_booking)
-            print("CHUJ")
-            print(booking['booking_id'])
         return formatted_bookings
 
     try:
