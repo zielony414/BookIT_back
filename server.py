@@ -34,7 +34,7 @@ def get_db_connection():
 public_email_company_reg = "" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
-logged_email = "konrad@konrad.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
+logged_email = "kontakt@romper.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 
 # Members API route
 @app.route('/members')
@@ -1405,6 +1405,7 @@ def ocenianie():
     try:
         email = request.json.get("email")
         ocena = request.json.get("ocena")
+        booking_id = request.get("booking_id")
 
         db = get_db_connection()
         cursor = db.cursor()
@@ -1421,6 +1422,10 @@ def ocenianie():
         cursor.execute(f"UPDATE companies SET Reviews_no={liczba}, Sum_of_reviews={ocenka} WHERE ID=(SELECT c.ID FROM (SELECT ID FROM companies WHERE email='{email}') AS c);")
 
         db.commit()
+
+        cursor.execute(f"UPDATE bookings SET recensed=1 WHERE ID={booking_id};")
+        db.commit()
+
         db.close()
 
         return jsonify("dzialam"), 200
