@@ -50,6 +50,7 @@ public_email_company_reg = "" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
 logged_email = "" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
+session = []
 session['log_as_company'] = False
 session['log_as_user'] = False
 session['logged_email'] = ''
