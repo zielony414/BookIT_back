@@ -232,6 +232,7 @@ def return_search_names():
 @app.route('/api/strona_logowania/user', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_user():
     global log_as_user, log_as_company, logged_email
+    print(current_user)
     try:
         # pobranie danych z frontu poprzez JSON
         login = request.json.get('user_login') # pola podane przez front muszą nazywać się user_login i user_password
