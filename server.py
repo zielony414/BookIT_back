@@ -13,7 +13,6 @@ import traceback #do usunięcia
 from datetime import timedelta
 import datetime
 from flask_cors import CORS #pip install flask-cors
-from flask_login import login_user, login_required, logout_user, current_user
 
 app = Flask(__name__)
 CORS(app)
@@ -232,7 +231,7 @@ def return_search_names():
 @app.route('/api/strona_logowania/user', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_user():
     global log_as_user, log_as_company, logged_email
-    print(current_user)
+    print(logged_email)
     try:
         # pobranie danych z frontu poprzez JSON
         login = request.json.get('user_login') # pola podane przez front muszą nazywać się user_login i user_password
@@ -246,12 +245,14 @@ def logging_in_user():
         db.close()
 
         if len(answer) > 0:
-            log_as_user = True
-            log_as_company = False
-            current_user = login
-            login_user(login, remember=True)
-            
-            print(current_user)
+            #log_as_user = True
+            #log_as_company = False
+            #logged_email = login
+            print(login)
+            session['log_as_company'] = False
+            session['log_as_user'] = True
+            session['logged_email'] = login
+            print(session.get('logged_email'))
             return jsonify({'message': 'Zalogowano pomyślnie!', 'username': login}), 200
         else:
             return jsonify({'message': 'Niepoprawne dane logowania!'}), 401
@@ -340,7 +341,7 @@ def logging_in_company():
             log_as_user = False
             session['log_as_company'] = True
             session['log_as_user'] = False
-            login_user(login, remember=True)
+            session['logged_email'] = login
             logged_email = login
             return jsonify({'message': 'Zalogowano pomyślnie jako firma!', 'username': login}), 200
         else:
@@ -595,7 +596,7 @@ def return_company_details():
         cursor = db.cursor()
 
         # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
-        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (current_user,))
+        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (session.get('logged_email'),))
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
@@ -658,7 +659,7 @@ def return_company_hours():
         cursor.execute(f"""SELECT o.monday_start, o.monday_end, o.tuesday_start, o.tuesday_end, o.wensday_start, o.wensday_end, o.thursday_start, o.thursday_end, o.friday_start, o.friday_end, o.saturday_start, o.saturday_end, o.sunday_start, o.sunday_end 
                         FROM bookit_main.opening_hours o
                         INNER JOIN bookit_main.companies c ON o.company_ID = c.ID
-                        WHERE c.email = %s""", (current_user,))
+                        WHERE c.email = %s""", (session.get('logged_email'),))
         hours = cursor.fetchone()
         db.commit()
         db.close()
@@ -747,7 +748,7 @@ def update_company_details():
 
         # Dynamically create the SQL query
         sql_query = f"UPDATE companies SET {field} = %s WHERE email = %s"
-        cursor.execute(sql_query, (value, current_user))
+        cursor.execute(sql_query, (value, session.get('logged_email')))
 
         db.commit()
         db.close()
@@ -790,7 +791,7 @@ def get_reservations():
             WHERE 
                 c.email = %s AND DATE(b.booking_time) = %s
             """,
-            (current_user, date)
+            (session.get('logged_email'), date)
         )
         reservations = cursor.fetchall()
         conn.close()
@@ -869,7 +870,7 @@ def update_company_hours():
             hours['friday_start'], hours['friday_end'],
             hours['saturday_start'], hours['saturday_end'],
             hours['sunday_start'], hours['sunday_end'],
-            current_user
+            session.get('logged_email')
         )
 
         print('Executing query:', query % values)  # Dodaj ten wiersz
@@ -1000,7 +1001,7 @@ def edit_profile():
     db = get_db_connection()
     cursor = db.cursor()
 
-    print(current_user)
+    print(session.get('logged_email'))
     email = request.json.get('email')
     nrTelefonu = request.json.get('nrTelefonu')
     miasto = request.json.get('miasto')
@@ -1014,7 +1015,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowy format numeru telefonu.'}), 400
 
         query = "UPDATE users SET tel_nr = %s WHERE email = %s"
-        cursor.execute(query, (nrTelefonu, current_user))
+        cursor.execute(query, (nrTelefonu, session.get('logged_email')))
         db.commit()
         print("zaktualizowano numer telefonu!")
 
@@ -1023,7 +1024,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowa nazwa miasta.'}), 400
 
         query = "UPDATE users SET address = %s where email = %s"
-        cursor.execute(query, (miasto, current_user))
+        cursor.execute(query, (miasto, session.get('logged_email')))
         db.commit()
         print("zaktualizowano miasto!")
 
@@ -1033,7 +1034,7 @@ def edit_profile():
 
         nowaPlec = 0 if plec == "Mezczyzna" else 1
         query = "UPDATE users SET gender = %s where email = %s"
-        cursor.execute(query, (nowaPlec, current_user))
+        cursor.execute(query, (nowaPlec, session.get('logged_email')))
         db.commit()
 
         print("Plec została zaktualizowana!")
@@ -1044,7 +1045,7 @@ def edit_profile():
 
         #wyciaganie starego hasla z bazy
         query = "SELECT password FROM users WHERE email = %s"
-        cursor.execute(query, (current_user))
+        cursor.execute(query, (session.get('logged_email')))
         rawData = cursor.fetchall()
         haslo = rawData[0]['password']
 
@@ -1053,7 +1054,7 @@ def edit_profile():
             return jsonify({'error': 'Hasla są niepoprawne.'}), 400
 
         query = "UPDATE users SET password = %s WHERE email = %s"
-        cursor.execute(query, (noweHaslo, current_user))
+        cursor.execute(query, (noweHaslo, session.get('logged_email')))
         db.commit()
         print("zaktualizowano haslo!")
 
@@ -1062,10 +1063,10 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
 
         query = "UPDATE users SET email = %s where email = %s"
-        cursor.execute(query, (email, current_user))
+        cursor.execute(query, (email, session.get('logged_email')))
         db.commit()
         print("Email zaktualizowany pomyślnie")
-        login_user(email, remember=True)
+        session['logged_email'] = email
 
     def printUsersTable():
         query = 'select * from users'
@@ -1096,7 +1097,7 @@ def edit_profile():
 @app.route('/api/user_reservations')
 def get_user_reservations():
     global logged_email
-    print(current_user)
+    print(session['logged_email'])
     def send_bookings_query():
         db = get_db_connection()
         cursor = db.cursor()
@@ -1109,7 +1110,7 @@ def get_user_reservations():
                                  WHERE users.email = %s
                                  """
 
-        cursor.execute(query, (current_user,))
+        cursor.execute(query, (session['logged_email'],))
         all_bookings = cursor.fetchall()
         db.close()
 
@@ -1507,7 +1508,7 @@ def czy_zalogowano():
         elif session['log_as_user'] == True:
             session['company_or_user'] = 0
         info = {
-            "email": current_user,  
+            "email": session['logged_email'],  
             "company_or_user": company_or_user
         }
 
@@ -1520,7 +1521,7 @@ def czy_zalogowano():
 def wyloguj():
     global log_as_company, log_as_user, logged_email
     try:
-        logout_user()
+        session['logged_email'] = ""
         session['log_as_company'] = False
         session['log_as_user'] = False
 
