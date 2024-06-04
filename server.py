@@ -2,11 +2,9 @@ from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
 import pymysql
 import base64
-import time
 import re
 import mail_sender
 import free_day
-#import schedule # pip install schedule - jest zastąpiony przez APScheduler
 from apscheduler.schedulers.background import BackgroundScheduler #pip instal APScheduler
 from werkzeug.utils import secure_filename #pip install Werkzeug
 from decouple import config
