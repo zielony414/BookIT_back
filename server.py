@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
 import pymysql
 import base64
-import time
 import re
 import mail_sender
 import free_day
@@ -35,7 +34,7 @@ def get_db_connection():
 public_email_company_reg = "" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
-logged_email = "kontakt@romper.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
+logged_email = "konrad@konrad.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 
 # Members API route
 @app.route('/members')
@@ -1087,11 +1086,13 @@ def edit_profile():
 
 @app.route('/api/user_reservations')
 def get_user_reservations():
+    global logged_email
+
     def send_bookings_query():
         db = get_db_connection()
         cursor = db.cursor()
 
-        query = """SELECT companies.name AS businessName, companies.Address AS location, services.service_name AS service, services.cost AS price, bookings.booking_time AS date
+        query = """SELECT companies.name AS businessName, companies.Address AS location, services.service_name AS service, services.cost AS price, bookings.booking_time AS date, companies.email AS company_email
                                  FROM users
                                  JOIN bookings ON users.id = bookings.user_ID
                                  JOIN services ON services.id = bookings.service_ID
@@ -1111,7 +1112,8 @@ def get_user_reservations():
                 'location': booking['location'],
                 'service': booking['service'],
                 'price': booking['price'],
-                'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S')  # Formatowanie daty do stringa
+                'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S'),  # Formatowanie daty do stringa
+                'company_email': booking['company_email']
             }
             formatted_bookings.append(formatted_booking)
 
@@ -1398,7 +1400,7 @@ def add_to_day_schedule():
     finally:
         db.close()
 
-@app.route('/api/user_page/oceny', method=['POST'])
+@app.route('/api/user_page/oceny', methods=['POST'])
 def ocenianie():
     try:
         email = request.json.get("email")
@@ -1407,19 +1409,21 @@ def ocenianie():
         db = get_db_connection()
         cursor = db.cursor()
 
-        cursor.execute(f"SELECT Reviews_no, Sum_of_reviews FROM companies WHERE (email='{email}'));")
+        cursor.execute(f"SELECT Reviews_no, Sum_of_reviews FROM companies WHERE (email='{email}');")
         dane = cursor.fetchone()
         db.commit()
 
         ocenka = dane['Sum_of_reviews']
         liczba = dane['Reviews_no']
-
         ocenka = ocenka + ocena
         liczba = liczba + 1
 
-        cursor.execute(f"INSERT INTO (Reviews_no, Sum_of_reviews) FROM companies WHERE (email='{email}') VALUES ({liczba}, {ocenka});")
+        cursor.execute(f"UPDATE companies SET Reviews_no={liczba}, Sum_of_reviews={ocenka} WHERE ID=(SELECT c.ID FROM (SELECT ID FROM companies WHERE email='{email}') AS c);")
 
+        db.commit()
         db.close()
+
+        return jsonify("dzialam"), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
