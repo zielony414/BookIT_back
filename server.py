@@ -583,7 +583,7 @@ def return_company_details():
         cursor = db.cursor()
 
         # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
-        cursor.execute("SELECT Name, Description, Logo, tel_nr FROM companies WHERE ID = %s", (company_id,))
+        cursor.execute("SELECT Name, Description, Logo, tel_nr, city FROM companies WHERE ID = %s", (company_id,))
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
@@ -598,6 +598,8 @@ def return_company_details():
         description = company['Description']
         logo = company['Logo']
         numer = company['tel_nr']
+        city = company['city']
+
         if logo:
             logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
             logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
@@ -611,7 +613,8 @@ def return_company_details():
             'name': name,
             'description': description,
             'logo': logo_url,
-            'numer': numer
+            'numer': numer,
+            'city': city
         })
 
         # Zwróć nazwę firmy w formacie JSON
@@ -1076,6 +1079,59 @@ def add_to_day_schedule():
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
+
+@app.route('/api/Strona_firmy', methods=['POST'])
+def return_company_info():
+    try:
+        # Pobranie danych z przesłanego żądania POST
+        company_name = request.json.get('company_name')
+
+        # Nawiązanie połączenia z bazą danych
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
+        cursor.execute("SELECT Name, Description, Logo, tel_nr, city, address FROM companies WHERE Name = '%s'", (company_name,))
+        company = cursor.fetchone()
+
+        # Zamknięcie połączenia z bazą danych
+        db.close()
+
+        # Jeśli nie ma takiej firmy, zwróć błąd 404
+        if not company:
+            return jsonify({'error': 'Company not found'}), 404
+
+        result = []
+        name = company['Name']
+        description = company['Description']
+        logo = company['Logo']
+        numer = company['tel_nr']
+        city = company['city']
+        address = company['address']
+
+        if logo:
+            logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
+            logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+            logo_url = f"data:image/png;base64,{logo_base64}"
+        else:
+            logo_url = None
+
+
+        # Utwórz słownik z nazwą firmy
+        result = ({
+            'name': name,
+            'description': description,
+            'logo': logo_url,
+            'numer': numer,
+            'city': city,
+            'address': address
+        })
+
+        # Zwróć nazwę firmy w formacie JSON
+        return jsonify(result), 200
+    except Exception as err:
+        # Gdy pojawi się jakiś błąd, zwróć błąd 500
+        return jsonify({'error': str(err)}), 500
 
 #Zmiany tutaj wynikaja z uzycia APSchedulera
 if __name__ == '__main__':
