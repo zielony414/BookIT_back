@@ -21,10 +21,6 @@ r = redis.Redis(
   port=11724,
   password='uyKTNkb77sspebUHT1SWyQ7XkQSiLu3F')
 
-
-
-
-
 app = Flask(__name__)
 CORS(app)
 
@@ -54,6 +50,10 @@ public_email_company_reg = "" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
 logged_email = "" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
+session['log_as_company'] = False
+session['log_as_user'] = False
+session['logged_email'] = ''
+
 
 # Members API route
 @app.route('/members')
@@ -247,7 +247,7 @@ def return_search_names():
 # dekorator, wpisuje się to na froncie w funkcji fetch() i wtedy jest wywoływana ta funkcja poniżej
 @app.route('/api/strona_logowania/user', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_user():
-    global log_as_user, log_as_company, logged_email
+    global session
     print(logged_email)
     try:
         # pobranie danych z frontu poprzez JSON
@@ -1513,7 +1513,7 @@ def ocenianie():
     
 @app.route('/api/czy_zalogowano')
 def czy_zalogowano():
-    global log_as_company, log_as_user, logged_email
+    global session
     try:
         company_or_user = 0 # 0 - zalogowano jako uzytkownik 1 - zalogowano jako firma
         if session['log_as_company'] == True:
@@ -1534,7 +1534,7 @@ def czy_zalogowano():
 
 @app.route('/api/wyloguj')
 def wyloguj():
-    global log_as_company, log_as_user, logged_email
+    global session
     try:
         session['logged_email'] = ""
         session['log_as_company'] = False
