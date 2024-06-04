@@ -619,7 +619,7 @@ def return_company_details():
 
 
         # Utwórz słownik z nazwą firmy
-        result = ({
+        result = ([
             'name': name,
             'description': description,
             'logo': logo_url,
@@ -630,7 +630,7 @@ def return_company_details():
             'Instagram_link': instagram,
             'X_link': x,
             'Tiktok_link': tiktok
-        })
+        ])
 
         # Zwróć nazwę firmy w formacie JSON
         return jsonify({'data': result}), 200
