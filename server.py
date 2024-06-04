@@ -1529,7 +1529,7 @@ def czy_zalogowano():
             "company_or_user": session.get('company_or_user')
         }
 
-        print(info)
+        print(info + 'dupa')
         return jsonify(info)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
