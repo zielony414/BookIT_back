@@ -577,7 +577,7 @@ def return_company():
 
 @app.route('/api/Strona_zarządzania_firmą', methods=['POST'])
 def return_company_details():
-    global public_email_company_reg
+    global logged_email
     try:
         # Pobranie danych z przesłanego żądania POST
         company_id = request.json.get('company_id')
@@ -587,7 +587,7 @@ def return_company_details():
         cursor = db.cursor()
 
         # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
-        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (public_email_company_reg,))
+        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (logged_email,))
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
@@ -640,7 +640,7 @@ def return_company_details():
 
 @app.route('/api/Strona_zarządzania_firmą2', methods=['POST'])
 def return_company_hours():
-    global public_email_company_reg
+    global logged_email
     try:
         company_id = request.json.get('company_id')
         db = get_db_connection()
@@ -649,7 +649,7 @@ def return_company_hours():
         cursor.execute(f"""SELECT monday_start, monday_end, tuesday_start, tuesday_end, wensday_start, wensday_end, thursday_start, thursday_end, friday_start, friday_end, saturday_start, saturday_end, sunday_start, sunday_end 
                         FROM bookit_main.opening_hours 
                         INNER JOIN bookit_main.companies ON bookit_main.opening_hours.company_ID = bookit_main.companies.ID
-                        WHERE bookit_main.companies.email = {public_email_company_reg}""")
+                        WHERE bookit_main.companies.email = {logged_email}""")
         hours = cursor.fetchone()
         db.commit()
         db.close()
@@ -726,7 +726,7 @@ def return_company_hours():
 
 @app.route('/api/Strona_zarządzania_firmą/update', methods=['PUT'])
 def update_company_details():
-    global public_email_company_reg
+    global logged_email
     try:
         data = request.json
         company_id = data.get('company_id')
@@ -738,7 +738,7 @@ def update_company_details():
 
         # Dynamically create the SQL query
         sql_query = f"UPDATE companies SET {field} = %s WHERE email = %s"
-        cursor.execute(sql_query, (value, public_email_company_reg))
+        cursor.execute(sql_query, (value, logged_email))
 
         db.commit()
         db.close()
@@ -750,7 +750,7 @@ def update_company_details():
 
 @app.route('/api/Strona_zarządzania_firmą/reservations', methods=['POST'])
 def get_reservations():
-    global public_email_company_reg
+    global logged_email
     try:
         data = request.json
         company_id = data.get('company_id')
@@ -781,7 +781,7 @@ def get_reservations():
             WHERE 
                 c.email = %s AND DATE(b.booking_time) = %s
             """,
-            (public_email_company_reg, date)
+            (logged_email, date)
         )
         reservations = cursor.fetchall()
         conn.close()
@@ -820,7 +820,7 @@ def get_reservations():
 
 @app.route('/api/update_company_hours', methods=['POST'])
 def update_company_hours():
-    global public_email_company_reg
+    global logged_email
     try:
         data = request.json
         company_id = data.get('company_id')
@@ -860,7 +860,7 @@ def update_company_hours():
             hours['friday_start'], hours['friday_end'],
             hours['saturday_start'], hours['saturday_end'],
             hours['sunday_start'], hours['sunday_end'],
-            public_email_company_reg
+            logged_email
         )
 
         print('Executing query:', query % values)  # Dodaj ten wiersz
