@@ -2,10 +2,12 @@ from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
 import pymysql
 import base64
+import time
 import re
 import mail_sender
 import free_day
-import schedule # pip install schedule
+#import schedule # pip install schedule - jest zastąpiony przez APScheduler
+from apscheduler.schedulers.background import BackgroundScheduler #pip instal APScheduler
 from werkzeug.utils import secure_filename #pip install Werkzeug
 from decouple import config
 
@@ -783,7 +785,7 @@ def add_booking():
         db = get_db_connection()
         cursor = db.cursor()
 
-        data = request.json    
+        data = request.json
 
         company_id = data['company_id']
         user_id = data['user_id']
@@ -831,15 +833,24 @@ def add_to_day_schedule():
         data = request.json    
 
         company_id = data['company_id']
-        booking_date = data['date']  # 'YYYY-MM-DD' format
+        booking_date = data['date']  # 'YYYY-MM-DD' format    
         booking_time = data['time']  # 'HH:MM' format
         total_time_minutes = data['totalTime']  # Total time in minutes
+
+        booking_datetime = datetime.strptime(booking_date, "%Y-%m-%d")
+        reminder_date = booking_datetime - timedelta(days=1) #Data do przesłania do scheduled_email jako reminder email
+        feedback_date = booking_datetime + timedelta(days=1) #Data do przesłania do scheduled_email jako email feedbackowy
+        reminder_date_str = reminder_date.strftime("%Y-%m-%d")
+        feedback_date_str = feedback_date.strftime("%Y-%m-%d")
+        
+        email = data['email']
+        service_ids = data['service_ids']
+        total_cost = data['total_cost']        
 
         # Calculate the number of slots to fill
         slots_to_fill = total_time_minutes // 30
         if total_time_minutes % 30 != 0:
             slots_to_fill += 1
-
         
         # Calculate the start and end slots
         start_time = datetime.strptime(booking_time, '%H:%M')
@@ -849,14 +860,11 @@ def add_to_day_schedule():
         cursor.execute("SELECT id FROM day_schedule WHERE company_id = %s AND Date = %s", (company_id, booking_date))
         record = cursor.fetchone()
 
-        i = 0 #DEbug
         if free_day.is_free_day(company_id, booking_date, start_time, end_time) and free_day.is_booking_time_free(company_id, booking_date, booking_time, total_time_minutes):
             if record:
                 # Update existing record
                 current_time = start_time                
-                while current_time < end_time:          
-                    i = i + 1
-                                  
+                while current_time < end_time:                        
                     slot_column = current_time.strftime('%H:%M')
                     query = f"""
                         UPDATE day_schedule
@@ -868,7 +876,7 @@ def add_to_day_schedule():
                     record = cursor.fetchone()                    
                     current_time += timedelta(minutes=30)        
                 db.commit()                            
-                return jsonify({"message": "Day schedule updated successfully"}), 201
+                
                 
             else:
                 # Insert new record
@@ -889,9 +897,87 @@ def add_to_day_schedule():
                 cursor.execute(query)
                 print("Insertion successful")  
                 db.commit()                      
-                return jsonify({"message": "Day schedule updated successfully"}), 201
+                
+            format_strings = ','.join(['%s'] * len(service_ids))
+            query = f"SELECT service_name, cost FROM services WHERE ID IN ({format_strings})"
+            cursor.execute(query, tuple(service_ids))
+            service_names = cursor.fetchall()
+            service_names_str = ', '.join([service['service_name'] for service in service_names])        
+
+            query = "SELECT name, address, city FROM companies WHERE %s"
+            cursor.execute(query, (company_id,))
+            company = cursor.fetchone()            
+
+            message = (
+                f"Szanowny Użytkowniku,\n\n"
+                f"Dziękujemy za skorzystanie z naszego serwisu Bookit!\n\n"
+                f"Potwierdzamy, że zarezerwował(a) Pan(i) usługę(i) {service_names_str} oferowaną(e) przez firmę {company['name']}. Poniżej znajdują się szczegóły rezerwacji:\n\n"                
+                f"Usługa(i): {service_names_str}\n"
+                f"Firma: {company['name']}\n"
+                f"Data: {booking_date}\n"
+                f"Godzina: {booking_time}\n"
+                f"Adres: {company['address']}, {company['city']}\n"
+                f"Koszt: {total_cost}.00 złotych\n\n"
+                f"Prosimy o przybycie na miejsce na kilka minut przed umówioną godziną, aby zapewnić sprawne przeprowadzenie usługi.\n\n"
+                f"W razie jakichkolwiek pytań lub wątpliwości, prosimy o kontakt z firmą przez numer telefonu: 512958315.\n"
+                f"Jeśli chcesz odwołać wizytę lub podejrzeć szczegóły, udaj się na stronę Bookit.great-site.net. Informacja będzie dostępna w twoim profilu.\n"
+                f"Pozdrawiamy, \n\nZespół Bookit"
+            )
+
+            message = message.replace("\n", "<br>")
+
+            mail_sender.send_mail(
+                email,
+                "Potwierdzenie rezerwacji usługi w serwisie Bookit",
+                message
+            )
+
+            message = (
+                f"Szanowny Użytkowniku,\n\n"
+                f"Przypominamy, że jutro odbędzie się Twoja zarezerwowana usługa w serwisie Bookit. Poniżej znajdują się szczegóły rezerwacji: {company['name']}.\n"
+                f"Szczegóły wizyty:\n"
+                f"Usługa(i): {service_names_str}\n"
+                f"Firma: {company['name']}\n"
+                f"Data: {booking_date}\n"
+                f"Godzina: {booking_time}\n"
+                f"Adres: {company['address']}, {company['city']}\n"
+                f"Koszt: {total_cost}.00 złotych\n\n"
+                f"Prosimy o przybycie na miejsce na kilka minut przed umówioną godziną, aby zapewnić sprawne przeprowadzenie usługi.\n"
+                f"W razie jakichkolwiek pytań lub wątpliwości, prosimy o kontakt z firmą przez numer telefonu: 512958315.\n"
+                f"Jeśli chcesz odwołać wizytę lub podejrzeć szczegóły, udaj się na stronę Bookit.great-site.net. Informacja będzie dostępna w twoim profilu.\n"
+                f"Pozdrawiamy, \nZespół Bookit"
+            )
+
+            message = message.replace('\n', '<br>')
+            mail_sender.add_scheduled_email(
+                email, 
+                "Przypomnienie o jutrzejszej wizycie w serwisie Bookit",
+                message,
+                reminder_date_str                            
+            )
+
+            message = (
+                f"Szanowny Użytkowniku,\n\n"
+                f"Dziękujemy za skorzystanie z usługi w serwisie Bookit! Mamy nadzieję, że Twoja wizyta w firmie {company['name']} była satysfakcjonująca\n\n"
+                f"Chcielibyśmy poprosić o chwilę Twojego czasu, abyś podzielił się swoją opinią na temat świadczonych przez nas usług. Twoja opinia jest dla nas niezwykle ważna i pomoże nam ciągle doskonalić nasze usługi.\n\n"
+                f"Ocenić swoje wizyty możesz w profilu użytkownika, na platformie Bookit.great-site.net\n\n"
+                f"Dziękujemy za współpracę i mamy nadzieję, że będziemy mieli przyjemność obsługiwać Cię ponownie w przyszłości.\n\n"        
+                f"Pozdrawiamy, \nZespół Bookit"
+            )
+            
+            message = message.replace('\n', '<br>')
+            mail_sender.add_scheduled_email(
+                email, 
+                f"Ocena usługi firmy {company['name']}",
+                message,
+                feedback_date_str
+            )
+
+
+            return jsonify({"message": "Day schedule updated successfully", "is_free": 1}), 201
+
         else:            
-            return jsonify({"message": "That day is not free"}), 201
+            return jsonify({"message": "That day is not free", "is_free": 0}), 201
 
     except Exception as e:
         print("Error schedule: ", str(e))
@@ -899,7 +985,18 @@ def add_to_day_schedule():
     finally:
         db.close()
 
+#Zmiany tutaj wynikaja z uzycia APSchedulera
 if __name__ == '__main__':
-    app.run(debug=True)
-    schedule.every().day.at("09:00").do(mail_sender.send_scheduled_emails)
-    schedule.every().monday.do(mail_sender.delete_old_logs)
+    scheduler = BackgroundScheduler()
+    # Tworzenie procesów dla Flask i schedulera
+    scheduler.add_job(func=mail_sender.send_scheduled_emails, trigger="cron", hour=6, minute=00, second=10)
+    scheduler.add_job(func=mail_sender.delete_old_logs, trigger="cron", day_of_week='mon')
+
+    scheduler.start()
+
+    try:
+        #Zeby scheduler nie wywoływał funkcji dwukrotnie, trzeba wyłączyć reloader. 
+        #reloader automatycznie odpalał serwer po kazdej zmianie przy ctrl+s
+        app.run(debug=True, use_reloader=False)
+    except (KeyboardInterrupt, SystemExit):
+        scheduler.shutdown()

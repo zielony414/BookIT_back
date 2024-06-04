@@ -7,7 +7,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 def send_mail(receiver_email, title, message):
-
+    print("dzialam?")
 
     # Dane do logowania (adres e-mail i hasło)
     sender_email = config('EMAIL_USER')
@@ -26,7 +26,7 @@ def send_mail(receiver_email, title, message):
     # Treść wiadomości
     body = message
     body += "\n\n Wiadomość wysłana automatycznie. Prosimy na nią nie odpowiadać."
-    msg.attach(MIMEText(body))
+    msg.attach(MIMEText(body, 'html')) #'html' aby dalo sie wysylac puste linie za pomocą html'owego <br>
 
     # Logowanie do serwera SMTP i wysyłka e-maila
     try:
@@ -59,6 +59,7 @@ def add_scheduled_email(receiver_email, title, message, date):
 
 # Wysyłanie zaplanowanych e-maili z pliku scheduled_emails.txt
 def send_scheduled_emails():
+    print("dzialam scheduled?")
     try:
         with open("scheduled_emails.txt", 'r') as file:
             for line in file:

@@ -59,8 +59,8 @@ def is_free_day(company_ID, date_str, start_time, end_time):
             temp2 = result2['tuesday_end']
 
         elif day_of_week == 2:
-            temp1 = result2['wednesday_start']
-            temp2 = result2['wednesday_end']
+            temp1 = result2['wensday_start']
+            temp2 = result2['wensday_end']
 
         elif day_of_week == 3:
             temp1 = result2['thursday_start']
@@ -84,11 +84,11 @@ def is_free_day(company_ID, date_str, start_time, end_time):
         temp1 = datetime.strptime(temp1, '%H:%M')
         temp2 = datetime.strptime(temp2, '%H:%M')
 
-        print("-------- Godziny rezerwacji ---------")
-        print("start: ", start_time, "end: ", end_time)   
+        #print("-------- Godziny rezerwacji ---------")
+        #print("start: ", start_time, "end: ", end_time)   
 
-        print("----- Godziny otwarcia ------")
-        print("otwarcie: ", temp1, "  zamkniecie: ", temp2)
+        #print("----- Godziny otwarcia ------")
+        #print("otwarcie: ", temp1, "  zamkniecie: ", temp2)
 
         if not ((temp1 <= start_time and start_time <= temp2) and (temp1 <= end_time and end_time <= temp2)):
             print("Rezerwacja niemozliwa - zmien godzinę rezerwacji")
