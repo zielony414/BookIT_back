@@ -581,9 +581,6 @@ def return_company():
 def return_company_details():
     global logged_email
     try:
-        # Pobranie danych z przesłanego żądania POST
-        company_id = request.json.get('company_id')
-
         # Nawiązanie połączenia z bazą danych
         db = get_db_connection()
         cursor = db.cursor()
@@ -634,7 +631,7 @@ def return_company_details():
         })
 
         # Zwróć nazwę firmy w formacie JSON
-        return jsonify(result), 200
+        return jsonify({'company': result}), 200
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
@@ -719,7 +716,7 @@ def return_company_hours():
             'sunday_end': sun_end
         }
 
-        return jsonify(result), 200
+        return jsonify({'response': result}), 200
     except Exception as err:
         print(err)
         traceback.print_exc()
