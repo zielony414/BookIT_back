@@ -36,7 +36,7 @@ def get_db_connection():
 public_email_company_reg = "" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
-logged_email = "konrad@konrad.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
+logged_email = "" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 
 # Members API route
 @app.route('/members')
@@ -1498,7 +1498,7 @@ def czy_zalogowano():
         elif log_as_user == True:
             company_or_user = 0
         info = {
-            "email": logged_email,  
+            "email": logged_email,
             "company_or_user": company_or_user
         }
 
