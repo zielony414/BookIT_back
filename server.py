@@ -2,16 +2,20 @@ from flask import Flask, request, jsonify
 from datetime import datetime, timedelta
 import pymysql
 import base64
-import time
 import re
 import mail_sender
 import free_day
 #import schedule # pip install schedule - jest zastąpiony przez APScheduler
-from apscheduler.schedulers.background import BackgroundScheduler #pip instal APScheduler
+from apscheduler.schedulers.background import BackgroundScheduler #pip install APScheduler
 from werkzeug.utils import secure_filename #pip install Werkzeug
 from decouple import config
+import traceback #do usunięcia
+from datetime import timedelta
+import datetime
+from flask_cors import CORS #pip install flask-cors
 
 app = Flask(__name__)
+CORS(app)
 
 #----------------------------------------------------------------------------------------------------------------------
 # connection with database
@@ -32,7 +36,7 @@ def get_db_connection():
 public_email_company_reg = "" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
-logged_email = "kontakt@romper.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
+logged_email = "konrad@konrad.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 
 # Members API route
 @app.route('/members')
@@ -572,8 +576,10 @@ def return_company():
         # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500
 
+
 @app.route('/api/Strona_zarządzania_firmą', methods=['POST'])
 def return_company_details():
+    global logged_email
     try:
         # Pobranie danych z przesłanego żądania POST
         company_id = request.json.get('company_id')
@@ -583,7 +589,7 @@ def return_company_details():
         cursor = db.cursor()
 
         # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
-        cursor.execute("SELECT Name, Description, Logo, tel_nr, city FROM companies WHERE ID = %s", (company_id,))
+        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (logged_email,))
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
@@ -598,7 +604,12 @@ def return_company_details():
         description = company['Description']
         logo = company['Logo']
         numer = company['tel_nr']
-        city = company['city']
+        strona = company['Site_link']
+        facebook = company['Facebook_link']
+        linkedin = company['Linkedin_link']
+        instagram = company['Instagram_link']
+        x = company['X_link']
+        tiktok = company['Tiktok_link']
 
         if logo:
             logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
@@ -613,8 +624,13 @@ def return_company_details():
             'name': name,
             'description': description,
             'logo': logo_url,
-            'numer': numer,
-            'city': city
+            'tel_nr': numer,
+            'Site_link': strona,
+            'Facebook_link': facebook,
+            'Linkedin_link': linkedin,
+            'Instagram_link': instagram,
+            'X_link': x,
+            'Tiktok_link': tiktok
         })
 
         # Zwróć nazwę firmy w formacie JSON
@@ -623,36 +639,302 @@ def return_company_details():
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
 
+
 @app.route('/api/Strona_zarządzania_firmą2', methods=['POST'])
 def return_company_hours():
+    global logged_email
     try:
         company_id = request.json.get('company_id')
         db = get_db_connection()
         cursor = db.cursor()
 
-        #TODO może ktoś ogarnie dlaczego to nie cziała
-
-        cursor.execute(f"""SELECT monday_start FROM opening_hours WHERE ID = {company_id}""")
+        cursor.execute(f"""SELECT o.monday_start, o.monday_end, o.tuesday_start, o.tuesday_end, o.wensday_start, o.wensday_end, o.thursday_start, o.thursday_end, o.friday_start, o.friday_end, o.saturday_start, o.saturday_end, o.sunday_start, o.sunday_end 
+                        FROM bookit_main.opening_hours o
+                        INNER JOIN bookit_main.companies c ON o.company_ID = c.ID
+                        WHERE c.email = %s""", (logged_email,))
         hours = cursor.fetchone()
         db.commit()
         db.close()
 
-
         if not hours:
             return jsonify({'error': 'Company not found'}), 404
 
-        time_value = hours[0]
-        formatted_time = time_value.strftime('%H:%M')
-        #monday_start = hours['monday_start']
-        result = {
-            'monday_start': formatted_time
-        }
+        mon_start = divmod(hours['monday_start'].seconds // 60, 60)
+        mon_start = "{:02d}:{:02d}".format(mon_start[0], mon_start[1])
 
+        mon_end = divmod(hours['monday_end'].seconds // 60, 60)
+        mon_end = "{:02d}:{:02d}".format(mon_end[0], mon_end[1])
+
+        tue_start = divmod(hours['tuesday_start'].seconds // 60, 60)
+        tue_start = "{:02d}:{:02d}".format(tue_start[0], tue_start[1])
+
+        tue_end = divmod(hours['tuesday_end'].seconds // 60, 60)
+        tue_end = "{:02d}:{:02d}".format(tue_end[0], tue_end[1])
+
+        wen_start = divmod(hours['wensday_start'].seconds // 60, 60)
+        wen_start = "{:02d}:{:02d}".format(wen_start[0], wen_start[1])
+
+        wen_end = divmod(hours['wensday_end'].seconds // 60, 60)
+        wen_end = "{:02d}:{:02d}".format(wen_end[0], wen_end[1])
+
+        thu_start = divmod(hours['thursday_start'].seconds // 60, 60)
+        thu_start = "{:02d}:{:02d}".format(thu_start[0], thu_start[1])
+
+        thu_end = divmod(hours['thursday_end'].seconds // 60, 60)
+        thu_end = "{:02d}:{:02d}".format(thu_end[0], thu_end[1])
+
+        fri_start = divmod(hours['friday_start'].seconds // 60, 60)
+        fri_start = "{:02d}:{:02d}".format(fri_start[0], fri_start[1])
+
+        fri_end = divmod(hours['friday_end'].seconds // 60, 60)
+        fri_end = "{:02d}:{:02d}".format(fri_end[0], fri_end[1])
+
+        sat_start = divmod(hours['saturday_start'].seconds // 60, 60)
+        sat_start = "{:02d}:{:02d}".format(sat_start[0], sat_start[1])
+
+        sat_end = divmod(hours['saturday_end'].seconds // 60, 60)
+        sat_end = "{:02d}:{:02d}".format(sat_end[0], sat_end[1])
+
+        sun_start = divmod(hours['sunday_start'].seconds // 60, 60)
+        sun_start = "{:02d}:{:02d}".format(sun_start[0], sun_start[1])
+
+        sun_end = divmod(hours['sunday_end'].seconds // 60, 60)
+        sun_end = "{:02d}:{:02d}".format(sun_end[0], sun_end[1])
+
+
+        result = {
+            'monday_start': mon_start,
+            'monday_end': mon_end,
+            'tuesday_start': tue_start,
+            'tuesday_end': tue_end,
+            'wensday_start': wen_start,
+            'wensday_end': wen_end,
+            'thursday_start': thu_start,
+            'thursday_end': thu_end,
+            'friday_start': fri_start,
+            'friday_end': fri_end,
+            'saturday_start': sat_start,
+            'saturday_end': sat_end,
+            'sunday_start': sun_start,
+            'sunday_end': sun_end
+        }
 
         return jsonify(result), 200
     except Exception as err:
         print(err)
+        traceback.print_exc()
         return jsonify({'error': str(err)}), 500
+
+
+@app.route('/api/Strona_zarządzania_firmą/update', methods=['PUT'])
+def update_company_details():
+    global logged_email
+    try:
+        data = request.json
+        company_id = data.get('company_id')
+        field = data.get('field')
+        value = data.get('value')
+
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Dynamically create the SQL query
+        sql_query = f"UPDATE companies SET {field} = %s WHERE email = %s"
+        cursor.execute(sql_query, (value, logged_email))
+
+        db.commit()
+        db.close()
+
+        return jsonify({'message': 'Company details updated successfully'}), 200
+    except Exception as err:
+        return jsonify({'error': str(err)}), 500
+
+
+@app.route('/api/Strona_zarządzania_firmą/reservations', methods=['POST'])
+def get_reservations():
+    global logged_email
+    try:
+        data = request.json
+        company_id = data.get('company_id')
+        date = data.get('date')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT 
+                b.booking_time,
+                b.ID,
+                s.service_name,
+                s.category,
+                s.execution_time,
+                s.additional_info,
+                u.email,
+                u.tel_nr
+            FROM 
+                bookit_main.bookings b
+            INNER JOIN 
+                bookit_main.services s ON b.service_ID = s.ID
+            INNER JOIN
+                bookit_main.users u ON b.user_ID = u.ID
+            INNER JOIN
+                bookit_main.companies c ON b.company_ID = c.ID
+            WHERE 
+                c.email = %s AND DATE(b.booking_time) = %s
+            """,
+            (logged_email, date)
+        )
+        reservations = cursor.fetchall()
+        conn.close()
+
+        if not reservations:
+            return jsonify({'error': 'Reservations not found'}), 404
+
+        result = []
+        for res in reservations:
+            booking_time = res['booking_time']
+            godzina = f"{booking_time.hour:02}:{booking_time.minute:02}"
+
+            execution_time = res['execution_time']
+            if isinstance(execution_time, timedelta):
+                execution_time_minutes = execution_time.total_seconds() / 60
+            else:
+                execution_time_minutes = execution_time / 60
+
+            result.append({
+                'booking_time': godzina,
+                'id_rezerwacji': res['ID'],
+                'service_name': res['service_name'],
+                'category': res['category'],
+                'execution_time': execution_time_minutes,
+                'opis': res['additional_info'],
+                'email': res['email'],
+                'sms': res['tel_nr']
+            })
+
+        return jsonify(result), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+
+@app.route('/api/update_company_hours', methods=['POST'])
+def update_company_hours():
+    global logged_email
+    try:
+        data = request.json
+        company_id = data.get('company_id')
+        hours = data.get('hours')
+
+        print('Received data:', data)  # Dodaj ten wiersz
+        if not company_id or not hours:
+            return jsonify({'error': 'Missing company_id or hours data'}), 400
+
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        query = """
+            UPDATE bookit_main.opening_hours
+            INNER JOIN  bookit_main.companies ON bookit_main.opening_hours.company_ID = bookit_main.companies.ID
+            SET monday_start = %s,
+                monday_end = %s,
+                tuesday_start = %s,
+                tuesday_end = %s,
+                wensday_start = %s,
+                wensday_end = %s,
+                thursday_start = %s,
+                thursday_end = %s,
+                friday_start = %s,
+                friday_end = %s,
+                saturday_start = %s,
+                saturday_end = %s,
+                sunday_start = %s,
+                sunday_end = %s
+            WHERE bookit_main.companies = %s
+        """
+        values = (
+            hours['monday_start'], hours['monday_end'],
+            hours['tuesday_start'], hours['tuesday_end'],
+            hours['wensday_start'], hours['wensday_end'],
+            hours['thursday_start'], hours['thursday_end'],
+            hours['friday_start'], hours['friday_end'],
+            hours['saturday_start'], hours['saturday_end'],
+            hours['sunday_start'], hours['sunday_end'],
+            logged_email
+        )
+
+        print('Executing query:', query % values)  # Dodaj ten wiersz
+
+        cursor.execute(query, values)
+        db.commit()
+        db.close()
+
+        return jsonify({'message': 'Company hours updated successfully'}), 200
+    except Exception as err:
+        print(err)
+        traceback.print_exc()
+        return jsonify({'error': str(err)}), 500
+
+@app.route('/api/update_reservation', methods=['POST'])
+def update_reservation():
+    try:
+        data = request.json
+        db = get_db_connection()
+        reservation = data.get('reservation')
+        if not reservation:
+            return jsonify({'error': 'No reservation data provided'}), 400
+
+        cursor = db.cursor()
+
+        query = """
+                    UPDATE bookit_main.bookings
+                    SET booking_time = %s
+                    WHERE ID = %s
+                """
+        values = (
+                reservation['booking_time'],
+                reservation['id_rezerwacji']
+        )
+
+        # Find the reservation in the database
+        cursor.execute(query, values)
+        db.commit()
+        db.close()
+
+        return jsonify({'message': 'Reservation updated successfully'}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/delete_reservation', methods=['DELETE'])
+def delete_reservation():
+    try:
+        data = request.json
+        db = get_db_connection()
+        reservation_id = data.get('id_rezerwacji')
+        if not reservation_id:
+            return jsonify({'error': 'No reservation ID provided'}), 400
+
+        cursor = db.cursor()
+
+        query = """
+                    DELETE FROM bookit_main.bookings
+                    WHERE ID = %s
+                """
+        values = (reservation_id,)
+
+        # Delete the reservation from the database
+        cursor.execute(query, values)
+        db.commit()
+        db.close()
+
+        return jsonify({'message': 'Reservation deleted successfully'}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
+
 
 ALLOWED_EXTENSIONS = set(['png', 'jpg',  'jpeg'])
 
@@ -701,11 +983,10 @@ def upload_file():
         })
     return resp
 
-@app.route('/edit_profile', methods=['POST'])
+@app.route('/api/edit_profile', methods=['POST'])
 def edit_profile():
     if not log_as_user:
       return jsonify({'error': 'Nie zalogowany.'}), 401
-
 
     global logged_email
 
@@ -801,10 +1082,57 @@ def edit_profile():
 
         return jsonify({'message': 'Profil zaktualizowany pomyślnie.'}), 200
 
-
     except Exception as err:
         print("Nie udało się zaktualizować profilu:", str(err))
         return jsonify({'error': 'Wystąpił błąd.'}), 500
+
+@app.route('/api/user_reservations')
+def get_user_reservations():
+    global logged_email
+    print(logged_email)
+    def send_bookings_query():
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        query = """SELECT companies.name AS businessName, companies.Address AS location, services.service_name AS service, services.cost AS price, bookings.booking_time AS date, companies.email AS company_email, bookings.recensed AS user_rating, bookings.id as booking_id
+                                 FROM users
+                                 JOIN bookings ON users.id = bookings.user_ID
+                                 JOIN services ON services.id = bookings.service_ID
+                                 JOIN companies ON companies.id = services.company_ID
+                                 WHERE users.email = %s
+                                 """
+
+        cursor.execute(query, (logged_email,))
+        all_bookings = cursor.fetchall()
+        db.close()
+
+
+
+        # Zmiana nazw kluczy i formatowanie daty
+        formatted_bookings = []
+        for booking in all_bookings:
+            formatted_booking = {
+                'businessName': booking['businessName'],
+                'location': booking['location'],
+                'service': booking['service'],
+                'price': booking['price'],
+                'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S'),  # Formatowanie daty do stringa
+                'company_email': booking['company_email'],
+                'user_rating': booking['user_rating'],
+                'booking_id': booking['booking_id']
+            }
+            formatted_bookings.append(formatted_booking)
+            print("CHUJ")
+            print(booking['booking_id'])
+        return formatted_bookings
+
+    try:
+        all_bookings = send_bookings_query()
+        return jsonify(all_bookings), 200
+
+    except Exception as err:
+        return jsonify({'error': str(err)}), 500
+
 
 @app.route('/api/services')
 def get_services_by_company_id():
@@ -899,7 +1227,7 @@ def add_booking():
                 
         if free_day.is_free_day(company_id, booking_date, start_time, end_time) and free_day.is_booking_time_free(company_id, booking_date, booking_time, total_time_minutes):
             query = """
-                INSERT INTO bookings (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms)
+                INSERT INTO bookings (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms, 0)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.execute(query, (company_id, user_id, service_id, booking_datetime, confirm_mail, reminder_mail, confirm_sms, reminder_sms))
@@ -917,7 +1245,6 @@ def add_booking():
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
-
 
 @app.route('/api/add_to_day_schedule', methods=['POST'])
 def add_to_day_schedule():
@@ -1132,6 +1459,56 @@ def return_company_info():
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
+
+@app.route('/api/user_page/oceny', methods=['POST'])
+def ocenianie():
+    try:
+        email = request.json.get("email")
+        ocena = request.json.get("ocena")
+        booking_id = request.json.get("booking_id")
+
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        cursor.execute(f"SELECT Reviews_no, Sum_of_reviews FROM companies WHERE (email='{email}');")
+        dane = cursor.fetchone()
+        db.commit()
+
+        ocenka = dane['Sum_of_reviews']
+        liczba = dane['Reviews_no']
+        ocenka = ocenka + ocena
+        liczba = liczba + 1
+
+        cursor.execute(f"UPDATE companies SET Reviews_no={liczba}, Sum_of_reviews={ocenka} WHERE ID=(SELECT c.ID FROM (SELECT ID FROM companies WHERE email='{email}') AS c);")
+
+        db.commit()
+
+        cursor.execute(f"UPDATE bookings SET recensed=1 WHERE ID={booking_id};")
+        db.commit()
+
+        db.close()
+
+        return jsonify("dzialam"), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/czy_zalogowano')
+def czy_zalogowano():
+    global log_as_company, log_as_user, logged_email
+    try:
+        company_or_user = 0 # 0 - zalogowano jako uzytkownik 1 - zalogowano jako firma
+        if log_as_company == True:
+            company_or_user = 1
+        elif log_as_user == True:
+            company_or_user = 0
+        info = {
+            "email": logged_email,  
+            "company_or_user": company_or_user
+        }
+
+        return jsonify(info)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 #Zmiany tutaj wynikaja z uzycia APSchedulera
 if __name__ == '__main__':
