@@ -1525,7 +1525,7 @@ def czy_zalogowano():
         elif session['log_as_user'] == True:
             session['company_or_user'] = 0
         info = {
-            "email": session['logged_email'],  
+            "email": session.get('logged_email'),  
             "company_or_user": company_or_user
         }
 
