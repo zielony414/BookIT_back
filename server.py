@@ -631,7 +631,7 @@ def return_company_details():
         })
 
         # Zwróć nazwę firmy w formacie JSON
-        return jsonify({'company': result}), 200
+        return jsonify({'data': result}), 200
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
@@ -716,7 +716,7 @@ def return_company_hours():
             'sunday_end': sun_end
         }
 
-        return jsonify({'response': result}), 200
+        return jsonify({'data': result}), 200
     except Exception as err:
         print(err)
         traceback.print_exc()
@@ -810,7 +810,7 @@ def get_reservations():
                 'sms': res['tel_nr']
             })
 
-        return jsonify(result), 200
+        return jsonify({'data': result}), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': 'Internal server error'}), 500
