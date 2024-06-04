@@ -341,66 +341,46 @@ def registration_company():
     global public_email_company_reg
     try:
         email = request.json.get('email')
-        if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
-            return jsonify({'error': 'Nieprawidłowy format emaila.'}), 401
+        
         public_email_company_reg = email
-        #print("email: " + email)
-        #print("email gloabal:" + public_email_company_reg)
+
         password = request.json.get('password')
-        #print(password)
+
+        password_repeat = request.json.get('password_repeat')
+
         company_name = request.json.get('company_name')
-        #print(company_name)
+
         phone = request.json.get('phone')
-        if int(phone) > 999999999:
-             return jsonify({'error': str(err)}), 401
-        #print(phone)
+
         description = request.json.get('description')
-        #print(description)
+
         nip = request.json.get('nip')
-        if int(nip) > 9999999999:
-             return jsonify({'error': str(err)}), 402 
-        #print(nip)
+        
         category = request.json.get('type')
-        #print(category)
-        #type_of_servise = request.json.get('stacjonarnie')
+
         if request.json.get('stacjonarnie') == True:
             type_of_servise = 0
         else:
             type_of_servise = 1
-        #print(type_of_servise)
+
         street_number = request.json.get('street_number')
-        #print(street_number)
+
         city = request.json.get('city')
-        #print(city)
+
         post_code = request.json.get('post_code')
-        #print(post_code)
+
         link_page = request.json.get('link_page')
-        #print(link_page)
+
         facebook = request.json.get('facebook')
-        #print(facebook)
+
         tt = request.json.get('tiktok')
-        #print(tt)
+
         linkedin = request.json.get('linkedin')
-        #print(linkedin)
+
         instagram = request.json.get('instagram')
-        #print(instagram)
+
         twitter = request.json.get('twitter')
-        #print(twitter)
-        #pon_start = request.json.get('workingHours').get('monday').get('open')
-        #print("pon " + pon_start)
-        # pon_stop = request.json.get('workingHours').get('monday').get('close')
-        # wt_start = request.json.get('workingHours').get('tuesday').get('open')
-        # wt_stop = request.json.get('workingHours').get('tuesday').get('close')
-        # sr_start = request.json.get('workingHours').get('wednesday').get('open')
-        # sr_stop = request.json.get('workingHours').get('wednesday').get('close')
-        # czw_start = request.json.get('workingHours').get('thursday').get('open')
-        # czw_stop = request.json.get('workingHours').get('thursday').get('close')
-        # pt_start = request.json.get('workingHours').get('friday').get('open')
-        # pt_stop = request.json.get('workingHours').get('friday').get('close')
-        # sob_start = request.json.get('workingHours').get('saturday').get('open')
-        # sob_stop = request.json.get('workingHours').get('saturday').get('close')
-        # nd_start = request.json.get('workingHours').get('sunday').get('open')
-        # nd_stop = request.json.get('workingHours').get('sunday').get('close')
+
         pon_start = request.json.get('monday_open')
         pon_stop = request.json.get('monday_close')
         wt_start = request.json.get('tuesday_open')
@@ -415,8 +395,49 @@ def registration_company():
         sob_stop = request.json.get('saturday_close')
         nd_start = request.json.get('sunday_open')
         nd_stop = request.json.get('sunday_close')
-        print("ponstart:" + pon_start)
-        # poprawić #Logo i #Sector bo też nie wiem co to
+
+
+
+
+         # Sprawdź, czy wszystkie pola są obecne
+        if not all(email):
+            return jsonify({'error': 'Musisz podać adres email by się zarejestrować'}), 400
+            
+
+        # Walidacja emaila
+        if not re.match(r'^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+            return jsonify({'error': 'Nieprawidłowy format adresu email.'}), 400
+
+        if not all(password):
+            return jsonify({'error': 'Podaj hasło'}), 400
+        
+        # Walidacja hasła (musi mieć od 8 do 45 znaków)
+        if not (8 <= len(password) <= 45):
+            return jsonify({'error': 'Hasło musi mieć od 8 do 45 znaków.'}), 400
+
+        if not password == password_repeat:
+            return jsonify({'error': 'Hasła nie są takie same'}), 400
+
+        # Walidacja numeru telefonu (musi mieć 9 cyfr)
+        if not re.match(r"^\d{9}$", phone):
+            return jsonify({'error': 'Numer telefonu musi posiadać 9 cyfr.'}), 400
+
+        if not re.match(r"^\d{10}$", nip):
+             return jsonify({'error': 'Numer NIP musi posiadać 10 cyfr.'}), 400
+
+        if not category:
+            return jsonify({'error': 'Podaj kategorię firmy'}), 400
+        
+        if not street_number:
+            return jsonify({'error': 'Podaj ulicę i numer'}), 400
+        
+        if not city:
+            return jsonify({'error': 'Podaj miasto'}), 400
+        
+        if not post_code:
+            return jsonify({'error': 'Podaj kod pocztowy'}), 400
+
+
         db = get_db_connection()
         cursor = db.cursor()
         cursor.execute(f"""INSERT INTO companies (Name, City, Address, Logo, Category, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link,
@@ -424,7 +445,7 @@ def registration_company():
                    VALUES ('{company_name}', '{city}', '{post_code} {street_number}', '0', '{category}', '{link_page}', '{facebook}', '{linkedin}', 
                    '{instagram}', '{twitter}', '{tt}', 0, 0, {nip}, {phone}, '{description}', '{email}', {type_of_servise}, '{password}');""")
         
-        #print("przeszlow")
+
         cursor.execute(f"""INSERT INTO opening_hours (company_id, monday_start, monday_end, tuesday_start, tuesday_end, wensday_start, wensday_end, thursday_start, thursday_end, friday_start, friday_end, saturday_start, saturday_end, sunday_start, sunday_end) 
               VALUES ( (SELECT ID FROM companies WHERE (email='{email}')), '{pon_start}:00', '{pon_stop}:00', '{wt_start}:00', '{wt_stop}:00', '{sr_start}:00', '{sr_stop}:00', '{czw_start}:00', '{czw_stop}:00', '{pt_start}:00', '{pt_stop}:00', '{sob_start}:00', '{sob_stop}:00', '{nd_start}:00', '{nd_stop}:00');""")
         db.commit()
@@ -440,31 +461,36 @@ def add_service():
     global public_email_company_reg
     try:
         name = request.json.get('name')
-        #print(name)
+
         type = request.json.get('type')
-        #print(type)
+
         description = request.json.get('description')
-        #print(description)
+
         minuts = request.json.get('duration')
         hours = minuts // 60
         minuty = minuts % 60
         sekundy = 0
-        #print(hours)
+
         price = request.json.get('price')
-        #print(price)
+
         if request.json.get('isApproximate') == True:
             isAprox = 0
         else:
             isAprox = 1
-        #print(isAprox)
 
-        # poprawić approximate_cost bo niewiem co to jest i dodać typ usługi 
+        if not name:
+            return jsonify({'error': 'Podaj nazwę usługi'}), 400
+        
+        if not type:
+            return jsonify({'error': 'Podaj typ usługi'}), 400
+        
+        if price == None or price >= 0:
+            return jsonify({'error': 'Usługa musi mieć cenę większą niż 0'}), 400
+
         db = get_db_connection()
         cursor = db.cursor()
-        #print("123")
         cursor.execute(f"""INSERT INTO services (company_ID, category, service_name, cost, approximate_cost, execution_time, additional_info) 
                        VALUES ((SELECT ID FROM companies WHERE (email='{public_email_company_reg}')), '{type}', '{name}', {price}, {isAprox}, '{hours:02}:{minuty:02}:{sekundy:02}', '{description}');""")
-        #print("456")
         db.commit()
         db.close()
 
@@ -491,6 +517,10 @@ def return_company():
         cursor.execute(f"SELECT picture FROM bookit_main.photos WHERE company_ID = '{company['ID']}';") 
 
         photos = cursor.fetchall()
+
+        cursor.execute(f"SELECT picture FROM bookit_main.photos WHERE company_ID = '{company['ID']}';") 
+
+
         db.close()
 
         # Przetwarzanie wyników
@@ -588,7 +618,6 @@ def return_company_details():
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
 
-
 @app.route('/api/Strona_zarządzania_firmą2', methods=['POST'])
 def return_company_hours():
     try:
@@ -620,7 +649,6 @@ def return_company_hours():
         print(err)
         return jsonify({'error': str(err)}), 500
 
- 
 ALLOWED_EXTENSIONS = set(['png', 'jpg',  'jpeg'])
 
 def allowed_file(filename):
@@ -783,7 +811,7 @@ def get_services_by_company_id():
         if not company_id:
             return jsonify({"error": "Missing company_id"}), 400
 
-        query = "SELECT ID, service_name, cost, execution_time, approximate_cost FROM services WHERE company_ID = %s"
+        query = "SELECT ID, service_name, cost, execution_time, approximate_cost, additional_info FROM services WHERE company_ID = %s"
         cursor.execute(query, (company_id,))
         services = cursor.fetchall()
 
@@ -793,7 +821,8 @@ def get_services_by_company_id():
             "cost": service['cost'], 
             "time": str(service['execution_time']),
             "time_minutes": service['execution_time'].total_seconds() // 60,
-            "approximate_cost": service['approximate_cost']
+            "approximate_cost": service['approximate_cost'],
+            "additional_info": service['additional_info']
             } 
             
             for service in services
@@ -963,6 +992,6 @@ def add_to_day_schedule():
         db.close()
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    #app.run(debug=True)
     schedule.every().day.at("09:00").do(mail_sender.send_scheduled_emails)
     schedule.every().monday.do(mail_sender.delete_old_logs)
