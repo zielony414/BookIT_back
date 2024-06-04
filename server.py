@@ -1219,7 +1219,7 @@ def add_booking():
                 
         if free_day.is_free_day(company_id, booking_date, start_time, end_time) and free_day.is_booking_time_free(company_id, booking_date, booking_time, total_time_minutes):
             query = """
-                INSERT INTO bookings (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms)
+                INSERT INTO bookings (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms, 0)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.execute(query, (company_id, user_id, service_id, booking_datetime, confirm_mail, reminder_mail, confirm_sms, reminder_sms))
