@@ -688,8 +688,6 @@ def get_user_reservations():
 
     try:
         all_bookings = send_bookings_query()
-        for res in all_bookings:
-            print(res)
         return jsonify(all_bookings), 200
 
     except Exception as err:
