@@ -1506,6 +1506,19 @@ def czy_zalogowano():
         return jsonify(info)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+
+@app.route('/api/wyloguj')
+def wyloguj():
+    global log_as_company, log_as_user, logged_email
+    try:
+        logged_email = ""
+        log_as_company = False
+        log_as_user = False
+
+        return jsonify({'message': 'Zalogowano pomyślnie!'}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 #Zmiany tutaj wynikaja z uzycia APSchedulera
 if __name__ == '__main__':
