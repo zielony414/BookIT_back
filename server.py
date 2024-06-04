@@ -588,7 +588,7 @@ def return_company_details():
         cursor = db.cursor()
 
         # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
-        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (logged_email,))
+        cursor.execute(f"SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = '{logged_email}'")
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
