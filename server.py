@@ -231,6 +231,7 @@ def return_search_names():
 @app.route('/api/strona_logowania/user', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_user():
     global log_as_user, log_as_company, logged_email
+    print(logged_email)
     try:
         # pobranie danych z frontu poprzez JSON
         login = request.json.get('user_login') # pola podane przez front muszą nazywać się user_login i user_password
@@ -247,6 +248,7 @@ def logging_in_user():
             log_as_user = True
             log_as_company = False
             logged_email = login
+            print(logged_email)
             return jsonify({'message': 'Zalogowano pomyślnie!', 'username': login}), 200
         else:
             return jsonify({'message': 'Niepoprawne dane logowania!'}), 401
@@ -631,7 +633,8 @@ def return_company_details():
         })
 
         # Zwróć nazwę firmy w formacie JSON
-        return jsonify({'response': result}), 200
+        return jsonify({'data': result}), 200
+
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
@@ -716,7 +719,7 @@ def return_company_hours():
             'sunday_end': sun_end
         }
 
-        return jsonify({'response': result}), 200
+        return jsonify({'data': result}), 200
     except Exception as err:
         print(err)
         traceback.print_exc()
@@ -809,7 +812,7 @@ def get_reservations():
                 'sms': res['tel_nr']
             })
 
-        return jsonify({'response': result}), 200
+        return jsonify({'data': result}), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': 'Internal server error'}), 500
@@ -1117,8 +1120,6 @@ def get_user_reservations():
                 'booking_id': booking['booking_id']
             }
             formatted_bookings.append(formatted_booking)
-            print("CHUJ")
-            print(booking['booking_id'])
         return formatted_bookings
 
     try:
@@ -1502,6 +1503,19 @@ def czy_zalogowano():
         }
 
         return jsonify(info)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+@app.route('/api/wyloguj')
+def wyloguj():
+    global log_as_company, log_as_user, logged_email
+    try:
+        logged_email = ""
+        log_as_company = False
+        log_as_user = False
+
+        return jsonify({'message': 'Zalogowano pomyślnie!'}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
