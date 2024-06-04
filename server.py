@@ -247,7 +247,7 @@ def return_search_names():
 # dekorator, wpisuje się to na froncie w funkcji fetch() i wtedy jest wywoływana ta funkcja poniżej
 @app.route('/api/strona_logowania/user', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_user():
-    global session
+    global session, log_as_user, log_as_company, logged_email
     print(logged_email)
     try:
         # pobranie danych z frontu poprzez JSON
@@ -1513,13 +1513,15 @@ def ocenianie():
     
 @app.route('/api/czy_zalogowano')
 def czy_zalogowano():
-    global session
+    global session, log_as_user, log_as_company, logged_email
     try:
         company_or_user = 0 # 0 - zalogowano jako uzytkownik 1 - zalogowano jako firma
         if session['log_as_company'] == True:
             session['company_or_user'] = 1
         elif session['log_as_user'] == True:
             session['company_or_user'] = 0
+        else:
+            session['company_or_user'] = -1
         info = {
             "email": session.get('logged_email'), 
             "company_or_user": session.get('company_or_user')
@@ -1534,7 +1536,7 @@ def czy_zalogowano():
 
 @app.route('/api/wyloguj')
 def wyloguj():
-    global session
+    global session, log_as_user, log_as_company, logged_email
     try:
         session['logged_email'] = ""
         session['log_as_company'] = False
