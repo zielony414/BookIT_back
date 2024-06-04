@@ -1203,7 +1203,7 @@ def add_to_day_schedule():
     finally:
         db.close()
 
-@app.route('/api/user_page/oceny', method=['POST'])
+@app.route('/api/user_page/oceny', methods=['POST'])
 def ocenianie():
     try:
         email = request.json.get("email")
