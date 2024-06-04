@@ -1516,12 +1516,10 @@ def czy_zalogowano():
     global session, log_as_user, log_as_company, logged_email
     try:
         company_or_user = 0 # 0 - zalogowano jako uzytkownik 1 - zalogowano jako firma
-        if session['log_as_company'] == True:
+        if session['log_as_company'] == True or session['log_as_user'] == True:
             session['company_or_user'] = 1
-        elif session['log_as_user'] == True:
-            session['company_or_user'] = 0
         else:
-            session['company_or_user'] = -1
+            session['company_or_user'] = 0
         info = {
             "email": session.get('logged_email'), 
             "company_or_user": session.get('company_or_user')
