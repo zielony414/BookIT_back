@@ -981,7 +981,7 @@ def upload_file():
         })
     return resp
 
-@app.route('/edit_profile', methods=['POST'])
+@app.route('/api/edit_profile', methods=['POST'])
 def edit_profile():
     if not log_as_user:
       return jsonify({'error': 'Nie zalogowany.'}), 401
@@ -1243,7 +1243,6 @@ def add_booking():
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
-
 
 @app.route('/api/add_to_day_schedule', methods=['POST'])
 def add_to_day_schedule():
