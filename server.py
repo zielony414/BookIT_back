@@ -1114,6 +1114,31 @@ def add_to_day_schedule():
     finally:
         db.close()
 
+@app.route('/api/user_page/oceny', method=['POST'])
+def ocenianie():
+    try:
+        email = request.json.get("email")
+        ocena = request.json.get("ocena")
+
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        cursor.execute(f"SELECT Reviews_no, Sum_of_reviews FROM companies WHERE (email='{email}'));")
+        dane = cursor.fetchone()
+        db.commit()
+
+        ocenka = dane['Sum_of_reviews']
+        liczba = dane['Reviews_no']
+
+        ocenka = ocenka + ocena
+        liczba = liczba + 1
+
+        cursor.execute(f"INSERT INTO (Reviews_no, Sum_of_reviews) FROM companies WHERE (email='{email}') VALUES ({liczba}, {ocenka});")
+
+        db.close()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 #Zmiany tutaj wynikaja z uzycia APSchedulera
 if __name__ == '__main__':
     scheduler = BackgroundScheduler()
