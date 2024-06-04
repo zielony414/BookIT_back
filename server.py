@@ -703,7 +703,6 @@ def edit_profile():
     if not log_as_user:
       return jsonify({'error': 'Nie zalogowany.'}), 401
 
-
     global logged_email
 
     db = get_db_connection()
@@ -798,10 +797,48 @@ def edit_profile():
 
         return jsonify({'message': 'Profil zaktualizowany pomyślnie.'}), 200
 
-
     except Exception as err:
         print("Nie udało się zaktualizować profilu:", str(err))
         return jsonify({'error': 'Wystąpił błąd.'}), 500
+
+@app.route('/api/user_reservations')
+def get_user_reservations():
+    def send_bookings_query():
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        query = """SELECT companies.name AS businessName, companies.Address AS location, services.service_name AS service, services.cost AS price, bookings.booking_time AS date
+                                 FROM users
+                                 JOIN bookings ON users.id = bookings.user_ID
+                                 JOIN services ON services.id = bookings.service_ID
+                                 JOIN companies ON companies.id = services.company_ID
+                                 WHERE users.email = %s
+                                 """
+
+        cursor.execute(query, (logged_email,))
+        all_bookings = cursor.fetchall()
+        db.close()
+
+        # Zmiana nazw kluczy i formatowanie daty
+        formatted_bookings = []
+        for booking in all_bookings:
+            formatted_booking = {
+                'businessName': booking['businessName'],
+                'location': booking['location'],
+                'service': booking['service'],
+                'price': booking['price'],
+                'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S')  # Formatowanie daty do stringa
+            }
+            formatted_bookings.append(formatted_booking)
+
+        return formatted_bookings
+
+    try:
+        all_bookings = send_bookings_query()
+        return jsonify(all_bookings), 200
+
+    except Exception as err:
+        return jsonify({'error': str(err)}), 500
 
 @app.route('/api/services')
 def get_services_by_company_id():
