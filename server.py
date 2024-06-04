@@ -262,10 +262,6 @@ def logging_in_user():
         db.close()
 
         if len(answer) > 0:
-            #log_as_user = True
-            #log_as_company = False
-            #logged_email = login
-            print(login)
             session['log_as_company'] = False
             session['log_as_user'] = True
             session['logged_email'] = login
@@ -1532,6 +1528,7 @@ def czy_zalogowano():
         print(info + 'dupa')
         return jsonify(info)
     except Exception as e:
+        print('dupa nie dziala')
         return jsonify({"error": str(e)}), 500
     
 
