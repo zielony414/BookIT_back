@@ -15,7 +15,6 @@ import datetime
 
 app = Flask(__name__)
 
-site = 'https://book-it-back.vercel.app'
 #----------------------------------------------------------------------------------------------------------------------
 # connection with database
 def get_db_connection():
@@ -38,15 +37,15 @@ log_as_user = False # True - zalogowano jako użytkownik
 logged_email = "kontakt@romper.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 
 # Members API route
-@app.route(site+'/members')
+@app.route('/members')
 def members():
     return {"members": ["member1", "member2", "member3"]}
 
-@app.route(site+'/api/nav_items')
+@app.route('/api/nav_items')
 def get_nav_items():
     return {"nav_items": ["Fryzjer", "Uroda", "Masaż", "Zwierzęta", "Siłownia", "Więcej..."]}
 
-@app.route(site+'/api/image_cards')
+@app.route('/api/image_cards')
 def get_image_cards():
     try:
         db = get_db_connection()
@@ -76,7 +75,7 @@ def get_image_cards():
         print("Error:", str(err))
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/strona_wyszukiwania_kategorie')
+@app.route('/api/strona_wyszukiwania_kategorie')
 def get_categories():
     try:
         db = get_db_connection()
@@ -90,7 +89,7 @@ def get_categories():
     except Exception as err:
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/strona_wyszukiwania_miasta')
+@app.route('/api/strona_wyszukiwania_miasta')
 def get_cities():
     try:
         db = get_db_connection()
@@ -104,7 +103,7 @@ def get_cities():
     except Exception as err:
         return jsonify({'error': str(err)}), 500
     
-@app.route(site+'/api/wyszukiwanie', methods=['POST'])
+@app.route('/api/wyszukiwanie', methods=['POST'])
 def return_search():
     try:
         # pobranie danych z frontu poprzez JSON
@@ -182,7 +181,7 @@ def return_search():
         # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500 
         
-@app.route(site+'/api/wyszukiwanie_po_nazwie', methods=['POST'])
+@app.route('/api/wyszukiwanie_po_nazwie', methods=['POST'])
 def return_search_names():
     try:
         # pobranie danych z frontu poprzez JSON
@@ -227,7 +226,7 @@ def return_search_names():
         return jsonify({'error': str(err)}), 500 
 
 # dekorator, wpisuje się to na froncie w funkcji fetch() i wtedy jest wywoływana ta funkcja poniżej
-@app.route(site+'/api/strona_logowania/user', methods=['POST']) 
+@app.route('/api/strona_logowania/user', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_user():
     global log_as_user, log_as_company, logged_email
     try:
@@ -254,7 +253,7 @@ def logging_in_user():
         # gdy pojawi się jakiś błąd zwraca error
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/user_registration', methods=['POST'])
+@app.route('/api/user_registration', methods=['POST'])
 def register_user():
     try:
         # Pobierz dane z żądania
@@ -314,7 +313,7 @@ def register_user():
     except Exception as err:
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/strona_logowania/company', methods=['POST']) 
+@app.route('/api/strona_logowania/company', methods=['POST']) # ogólnie metoda komuniakcji POST GET się nazywa REST-API podaje dla informacji
 def logging_in_company():
     global log_as_user, log_as_company, logged_email
     try:
@@ -341,7 +340,7 @@ def logging_in_company():
         # gdy pojawi się jakiś błąd zwraca error
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/strona_rejestracji_firmy/create', methods=['POST'])
+@app.route('/api/strona_rejestracji_firmy/create', methods=['POST'])
 def registration_company():
     global public_email_company_reg
     try:
@@ -461,7 +460,7 @@ def registration_company():
         # gdy pojawi się jakiś błąd zwraca error
         return jsonify({'error': str(err)}), 500 
  
-@app.route(site+'/api/strona_rejestracji_firmy/usługa', methods=['POST'])
+@app.route('/api/strona_rejestracji_firmy/usługa', methods=['POST'])
 def add_service():
     global public_email_company_reg
     try:
@@ -503,7 +502,7 @@ def add_service():
     except Exception as err:
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/firma', methods=['POST'])
+@app.route('/api/firma', methods=['POST'])
 def return_company():
     try:
         # pobranie danych z frontu poprzez JSON
@@ -575,7 +574,8 @@ def return_company():
         # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/Strona_zarządzania_firmą', methods=['POST'])
+
+@app.route('/api/Strona_zarządzania_firmą', methods=['POST'])
 def return_company_details():
     global public_email_company_reg
     try:
@@ -637,7 +637,8 @@ def return_company_details():
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/Strona_zarządzania_firmą2', methods=['POST'])
+
+@app.route('/api/Strona_zarządzania_firmą2', methods=['POST'])
 def return_company_hours():
     global public_email_company_reg
     try:
@@ -722,7 +723,8 @@ def return_company_hours():
         traceback.print_exc()
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/Strona_zarządzania_firmą/update', methods=['PUT'])
+
+@app.route('/api/Strona_zarządzania_firmą/update', methods=['PUT'])
 def update_company_details():
     global public_email_company_reg
     try:
@@ -746,7 +748,7 @@ def update_company_details():
         return jsonify({'error': str(err)}), 500
 
 
-@app.route(site+'/api/Strona_zarządzania_firmą/reservations', methods=['POST'])
+@app.route('/api/Strona_zarządzania_firmą/reservations', methods=['POST'])
 def get_reservations():
     global public_email_company_reg
     try:
@@ -814,7 +816,9 @@ def get_reservations():
         traceback.print_exc()
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route(site+'/api/update_company_hours', methods=['POST'])
+
+
+@app.route('/api/update_company_hours', methods=['POST'])
 def update_company_hours():
     global public_email_company_reg
     try:
@@ -871,7 +875,7 @@ def update_company_hours():
         traceback.print_exc()
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/update_reservation', methods=['POST'])
+@app.route('/api/update_reservation', methods=['POST'])
 def update_reservation():
     try:
         data = request.json
@@ -902,7 +906,7 @@ def update_reservation():
         print(e)
         return jsonify({'error': str(e)}), 500
 
-@app.route(site+'/api/delete_reservation', methods=['DELETE'])
+@app.route('/api/delete_reservation', methods=['DELETE'])
 def delete_reservation():
     try:
         data = request.json
@@ -935,7 +939,7 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg',  'jpeg'])
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
   
-@app.route(site+'/api/strona_rejestracji_firmy/zdjecia', methods=['POST'])
+@app.route('/api/strona_rejestracji_firmy/zdjecia', methods=['POST'])
 def upload_file():
     global public_email_company_reg
     if 'files[]' not in request.files:
@@ -977,7 +981,7 @@ def upload_file():
         })
     return resp
 
-@app.route(site+'/edit_profile', methods=['POST'])
+@app.route('/edit_profile', methods=['POST'])
 def edit_profile():
     if not log_as_user:
       return jsonify({'error': 'Nie zalogowany.'}), 401
@@ -1080,7 +1084,7 @@ def edit_profile():
         print("Nie udało się zaktualizować profilu:", str(err))
         return jsonify({'error': 'Wystąpił błąd.'}), 500
 
-@app.route(site+'/api/user_reservations')
+@app.route('/api/user_reservations')
 def get_user_reservations():
     global logged_email
 
@@ -1122,7 +1126,7 @@ def get_user_reservations():
     except Exception as err:
         return jsonify({'error': str(err)}), 500
 
-@app.route(site+'/api/services')
+@app.route('/api/services')
 def get_services_by_company_id():
     try:
         db = get_db_connection()
@@ -1156,7 +1160,7 @@ def get_services_by_company_id():
     finally:
         db.close()
 
-@app.route(site+'/api/user_info')
+@app.route('/api/user_info')
 def get_user_info_by_id():
     try:
         db = get_db_connection()
@@ -1189,7 +1193,7 @@ def get_user_info_by_id():
     finally:
         db.close()
 
-@app.route(site+'/api/add_booking', methods=['POST'])
+@app.route('/api/add_booking', methods=['POST'])
 def add_booking():
     try:
         print("TERAZ WYKONUJE ADD BOOKING")
@@ -1234,7 +1238,8 @@ def add_booking():
     finally:
         db.close()
 
-@app.route(site+'/api/add_to_day_schedule', methods=['POST'])
+
+@app.route('/api/add_to_day_schedule', methods=['POST'])
 def add_to_day_schedule():
     try:        
         db = get_db_connection()
@@ -1395,7 +1400,7 @@ def add_to_day_schedule():
     finally:
         db.close()
 
-@app.route(site+'/api/user_page/oceny', methods=['POST'])
+@app.route('/api/user_page/oceny', methods=['POST'])
 def ocenianie():
     try:
         email = request.json.get("email")
@@ -1427,7 +1432,7 @@ def ocenianie():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@app.route(site+'/api/czy_zalogowano')
+@app.route('/api/czy_zalogowano')
 def czy_zalogowano():
     global log_as_company, log_as_user, logged_email
     try:
