@@ -1212,9 +1212,6 @@ def ocenianie():
         email = request.json.get("email")
         ocena = request.json.get("ocena")
 
-        print(email)
-        print(ocena)
-
         db = get_db_connection()
         cursor = db.cursor()
 
@@ -1228,7 +1225,6 @@ def ocenianie():
         liczba = liczba + 1
 
         cursor.execute(f"UPDATE companies SET Reviews_no={liczba}, Sum_of_reviews={ocenka} WHERE ID=(SELECT c.ID FROM (SELECT ID FROM companies WHERE email='{email}') AS c);")
-        print("CHUJ")
 
         db.commit()
         db.close()
