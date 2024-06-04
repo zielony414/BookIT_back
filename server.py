@@ -245,13 +245,14 @@ def logging_in_user():
         db.close()
 
         if len(answer) > 0:
-            log_as_user = True
-            log_as_company = False
-            logged_email = login
+            #log_as_user = True
+            #log_as_company = False
+            #logged_email = login
+            print(login)
             session['log_as_company'] = False
             session['log_as_user'] = True
             session['logged_email'] = login
-            print(logged_email)
+            print(session.get('logged_email'))
             return jsonify({'message': 'Zalogowano pomyślnie!', 'username': login}), 200
         else:
             return jsonify({'message': 'Niepoprawne dane logowania!'}), 401
