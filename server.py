@@ -1525,10 +1525,11 @@ def czy_zalogowano():
         elif session['log_as_user'] == True:
             session['company_or_user'] = 0
         info = {
-            "email": session.get('logged_email'),  
-            "company_or_user": company_or_user
+            "email": session.get('logged_email'), 
+            "company_or_user": session.get('company_or_user')
         }
 
+        print(info)
         return jsonify(info)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
