@@ -12,8 +12,10 @@ from decouple import config
 import traceback #do usunięcia
 from datetime import timedelta
 import datetime
+from flask_cors import CORS #pip install flask-cors
 
 app = Flask(__name__)
+CORS(app)
 
 #----------------------------------------------------------------------------------------------------------------------
 # connection with database
