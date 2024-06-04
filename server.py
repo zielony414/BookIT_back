@@ -1138,6 +1138,24 @@ def ocenianie():
         db.close()
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/api/czy_zalogowano')
+def czy_zalogowano():
+    global log_as_company, log_as_user, logged_email
+    try:
+        company_or_user = 0 # 0 - zalogowano jako uzytkownik 1 - zalogowano jako firma
+        if log_as_company == True:
+            company_or_user = 1
+        elif log_as_user == True:
+            company_or_user = 0
+        info = {
+            "email": logged_email,  
+            "company_or_user": company_or_user
+        }
+
+        return jsonify(info)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 #Zmiany tutaj wynikaja z uzycia APSchedulera
 if __name__ == '__main__':
