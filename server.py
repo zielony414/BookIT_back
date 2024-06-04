@@ -53,7 +53,7 @@ logged_email = "" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 #session = []
 #session['log_as_company'] = False
 #session['log_as_user'] = False
-#session['logged_email'] = ''
+#session['logged_email'] = '' gasldsaodasdaodalwaodwd
 
 
 # Members API route
