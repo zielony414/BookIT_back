@@ -646,10 +646,10 @@ def return_company_hours():
         db = get_db_connection()
         cursor = db.cursor()
 
-        cursor.execute(f"""SELECT monday_start, monday_end, tuesday_start, tuesday_end, wensday_start, wensday_end, thursday_start, thursday_end, friday_start, friday_end, saturday_start, saturday_end, sunday_start, sunday_end 
-                        FROM bookit_main.opening_hours 
-                        INNER JOIN bookit_main.companies ON bookit_main.opening_hours.company_ID = bookit_main.companies.ID
-                        WHERE bookit_main.companies.email = {logged_email}""")
+        cursor.execute(f"""SELECT o.monday_start, o.monday_end, o.tuesday_start, o.tuesday_end, o.wensday_start, o.wensday_end, o.thursday_start, o.thursday_end, o.friday_start, o.friday_end, o.saturday_start, o.saturday_end, o.sunday_start, o.sunday_end 
+                        FROM bookit_main.opening_hours o
+                        INNER JOIN bookit_main.companies c ON o.company_ID = c.ID
+                        WHERE c.email = %s""", (logged_email,))
         hours = cursor.fetchone()
         db.commit()
         db.close()
