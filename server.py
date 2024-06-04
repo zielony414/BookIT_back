@@ -505,7 +505,7 @@ def add_service():
         db = get_db_connection()
         cursor = db.cursor()
         cursor.execute(f"""INSERT INTO services (company_ID, category, service_name, cost, approximate_cost, execution_time, additional_info) 
-                       VALUES ((SELECT ID FROM companies WHERE (email='{session['public_email_company_reg']}')), '{type}', '{name}', {price}, {isAprox}, '{hours:02}:{minuty:02}:{sekundy:02}', '{description}');""")
+                       VALUES ((SELECT ID FROM companies WHERE (email='{session.get('public_email_company_reg')}')), '{type}', '{name}', {price}, {isAprox}, '{hours:02}:{minuty:02}:{sekundy:02}', '{description}');""")
         db.commit()
         db.close()
 
@@ -595,7 +595,7 @@ def return_company_details():
         cursor = db.cursor()
 
         # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
-        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (session['logged_email'],))
+        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (session.get('logged_email'),))
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
@@ -658,7 +658,7 @@ def return_company_hours():
         cursor.execute(f"""SELECT o.monday_start, o.monday_end, o.tuesday_start, o.tuesday_end, o.wensday_start, o.wensday_end, o.thursday_start, o.thursday_end, o.friday_start, o.friday_end, o.saturday_start, o.saturday_end, o.sunday_start, o.sunday_end 
                         FROM bookit_main.opening_hours o
                         INNER JOIN bookit_main.companies c ON o.company_ID = c.ID
-                        WHERE c.email = %s""", (session['logged_email'],))
+                        WHERE c.email = %s""", (session.get('logged_email'),))
         hours = cursor.fetchone()
         db.commit()
         db.close()
@@ -747,7 +747,7 @@ def update_company_details():
 
         # Dynamically create the SQL query
         sql_query = f"UPDATE companies SET {field} = %s WHERE email = %s"
-        cursor.execute(sql_query, (value, session['logged_email']))
+        cursor.execute(sql_query, (value, session.get('logged_email')))
 
         db.commit()
         db.close()
@@ -790,7 +790,7 @@ def get_reservations():
             WHERE 
                 c.email = %s AND DATE(b.booking_time) = %s
             """,
-            (session['logged_email'], date)
+            (session.get('logged_email'), date)
         )
         reservations = cursor.fetchall()
         conn.close()
@@ -869,7 +869,7 @@ def update_company_hours():
             hours['friday_start'], hours['friday_end'],
             hours['saturday_start'], hours['saturday_end'],
             hours['sunday_start'], hours['sunday_end'],
-            session['logged_email']
+            session.get('logged_email')
         )
 
         print('Executing query:', query % values)  # Dodaj ten wiersz
@@ -966,7 +966,7 @@ def upload_file():
             db = get_db_connection()
             cursor = db.cursor()
             sql = """UPDATE companies SET Logo=%s WHERE id=(SELECT c.ID FROM (SELECT ID FROM companies WHERE email=%s) AS c)"""
-            cursor.execute(sql, (filedata, session['public_email_company_reg']))
+            cursor.execute(sql, (filedata, session.get('public_email_company_reg')))
             db.commit()
             db.close()
         elif i > 0 and file and allowed_file(file.filename):
@@ -974,7 +974,7 @@ def upload_file():
             db = get_db_connection()
             cursor = db.cursor()
             sql = """INSERT INTO photos (company_ID, picture) VALUES ((SELECT ID FROM companies WHERE email=%s), %s)"""
-            cursor.execute(sql, (session['public_email_company_reg'], filedata))
+            cursor.execute(sql, (session.get('public_email_company_reg'), filedata))
             db.commit()
             db.close()
         else:
@@ -1000,7 +1000,7 @@ def edit_profile():
     db = get_db_connection()
     cursor = db.cursor()
 
-    print(session['logged_email'])
+    print(session.get('logged_email'))
     email = request.json.get('email')
     nrTelefonu = request.json.get('nrTelefonu')
     miasto = request.json.get('miasto')
@@ -1014,7 +1014,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowy format numeru telefonu.'}), 400
 
         query = "UPDATE users SET tel_nr = %s WHERE email = %s"
-        cursor.execute(query, (nrTelefonu, session['logged_email']))
+        cursor.execute(query, (nrTelefonu, session.get('logged_email')))
         db.commit()
         print("zaktualizowano numer telefonu!")
 
@@ -1023,7 +1023,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowa nazwa miasta.'}), 400
 
         query = "UPDATE users SET address = %s where email = %s"
-        cursor.execute(query, (miasto, session['logged_email']))
+        cursor.execute(query, (miasto, session.get('logged_email')))
         db.commit()
         print("zaktualizowano miasto!")
 
@@ -1033,7 +1033,7 @@ def edit_profile():
 
         nowaPlec = 0 if plec == "Mezczyzna" else 1
         query = "UPDATE users SET gender = %s where email = %s"
-        cursor.execute(query, (nowaPlec, session['logged_email']))
+        cursor.execute(query, (nowaPlec, session.get('logged_email')))
         db.commit()
 
         print("Plec została zaktualizowana!")
@@ -1044,7 +1044,7 @@ def edit_profile():
 
         #wyciaganie starego hasla z bazy
         query = "SELECT password FROM users WHERE email = %s"
-        cursor.execute(query, (session['logged_email']))
+        cursor.execute(query, (session.get('logged_email')))
         rawData = cursor.fetchall()
         haslo = rawData[0]['password']
 
@@ -1053,7 +1053,7 @@ def edit_profile():
             return jsonify({'error': 'Hasla są niepoprawne.'}), 400
 
         query = "UPDATE users SET password = %s WHERE email = %s"
-        cursor.execute(query, (noweHaslo, session['logged_email']))
+        cursor.execute(query, (noweHaslo, session.get('logged_email')))
         db.commit()
         print("zaktualizowano haslo!")
 
@@ -1062,7 +1062,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
 
         query = "UPDATE users SET email = %s where email = %s"
-        cursor.execute(query, (email, session['logged_email']))
+        cursor.execute(query, (email, session.get('logged_email')))
         db.commit()
         print("Email zaktualizowany pomyślnie")
         session['logged_email'] = email
