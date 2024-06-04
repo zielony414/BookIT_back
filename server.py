@@ -34,7 +34,7 @@ def get_db_connection():
 public_email_company_reg = "" # zmienna potrzebna do rejestracji firmy
 log_as_company = False # True - zalogowano jako firma
 log_as_user = False # True - zalogowano jako użytkownik
-logged_email = "kontakt@romper.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
+logged_email = "konrad@konrad.com" # EMAIL ZALOGOWANEGO UŻYTKOWNIKA LUB FIRMY
 
 # Members API route
 @app.route('/members')
@@ -1087,12 +1087,12 @@ def edit_profile():
 @app.route('/api/user_reservations')
 def get_user_reservations():
     global logged_email
-
+    print(logged_email)
     def send_bookings_query():
         db = get_db_connection()
         cursor = db.cursor()
 
-        query = """SELECT companies.name AS businessName, companies.Address AS location, services.service_name AS service, services.cost AS price, bookings.booking_time AS date, companies.email AS company_email
+        query = """SELECT companies.name AS businessName, companies.Address AS location, services.service_name AS service, services.cost AS price, bookings.booking_time AS date, companies.email AS company_email, bookings.recensed AS user_rating, bookings.id as booking_id
                                  FROM users
                                  JOIN bookings ON users.id = bookings.user_ID
                                  JOIN services ON services.id = bookings.service_ID
@@ -1104,6 +1104,8 @@ def get_user_reservations():
         all_bookings = cursor.fetchall()
         db.close()
 
+
+
         # Zmiana nazw kluczy i formatowanie daty
         formatted_bookings = []
         for booking in all_bookings:
@@ -1113,10 +1115,13 @@ def get_user_reservations():
                 'service': booking['service'],
                 'price': booking['price'],
                 'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S'),  # Formatowanie daty do stringa
-                'company_email': booking['company_email']
+                'company_email': booking['company_email'],
+                'user_rating': booking['user_rating'],
+                'booking_id': booking['booking_id']
             }
             formatted_bookings.append(formatted_booking)
-
+            print("CHUJ")
+            print(booking['booking_id'])
         return formatted_bookings
 
     try:
@@ -1125,6 +1130,7 @@ def get_user_reservations():
 
     except Exception as err:
         return jsonify({'error': str(err)}), 500
+
 
 @app.route('/api/services')
 def get_services_by_company_id():
@@ -1400,12 +1406,13 @@ def add_to_day_schedule():
     finally:
         db.close()
 
+
 @app.route('/api/user_page/oceny', methods=['POST'])
 def ocenianie():
     try:
         email = request.json.get("email")
         ocena = request.json.get("ocena")
-        booking_id = request.get("booking_id")
+        booking_id = request.json.get("booking_id")
 
         db = get_db_connection()
         cursor = db.cursor()
