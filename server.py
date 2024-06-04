@@ -594,7 +594,7 @@ def return_company_details():
 
         # Jeśli nie ma takiej firmy, zwróć błąd 404
         if not company:
-            return jsonify({'error': 'Company not found'}), 404
+            return jsonify({'error': 'Company not found'}), 400
 
         result = []
         name = company['Name']
@@ -631,7 +631,7 @@ def return_company_details():
         })
 
         # Zwróć nazwę firmy w formacie JSON
-        return jsonify({'company': result}), 200
+        return jsonify({'response': result}), 200
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
@@ -752,7 +752,6 @@ def get_reservations():
     global logged_email
     try:
         data = request.json
-        company_id = data.get('company_id')
         date = data.get('date')
 
         conn = get_db_connection()
@@ -810,7 +809,7 @@ def get_reservations():
                 'sms': res['tel_nr']
             })
 
-        return jsonify(result), 200
+        return jsonify({'response': result}), 200
     except Exception as e:
         traceback.print_exc()
         return jsonify({'error': 'Internal server error'}), 500
@@ -822,7 +821,6 @@ def update_company_hours():
     global logged_email
     try:
         data = request.json
-        company_id = data.get('company_id')
         hours = data.get('hours')
 
         print('Received data:', data)  # Dodaj ten wiersz
