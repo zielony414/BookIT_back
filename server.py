@@ -13,9 +13,26 @@ import traceback #do usunięcia
 from datetime import timedelta
 import datetime
 from flask_cors import CORS #pip install flask-cors
+from flask_session import Session #pip install Flask-Session
+import redis
+
+r = redis.Redis(
+  host='redis-11724.c311.eu-central-1-1.ec2.redns.redis-cloud.com',
+  port=11724,
+  password='uyKTNkb77sspebUHT1SWyQ7XkQSiLu3F')
+
+
+
+
 
 app = Flask(__name__)
 CORS(app)
+
+SESSION_TYPE = 'redis'
+SESSION_REDIS = r
+app.config.from_object(__name__)
+Session(app)
+
 
 #----------------------------------------------------------------------------------------------------------------------
 # connection with database
