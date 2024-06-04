@@ -579,7 +579,7 @@ def return_company():
         return jsonify({'error': str(err)}), 500
 
 
-@app.route('/api/Strona_zarządzania_firmą', methods=['POST'])
+@app.route('/api/Strona_zarzadzania_firma', methods=['POST'])
 def return_company_details():
     global logged_email
     try:
@@ -640,7 +640,7 @@ def return_company_details():
         return jsonify({'error': str(err)}), 500
 
 
-@app.route('/api/Strona_zarządzania_firmą2', methods=['POST'])
+@app.route('/api/Strona_zarzadzania_firma2', methods=['POST'])
 def return_company_hours():
     global logged_email
     try:
@@ -726,7 +726,7 @@ def return_company_hours():
         return jsonify({'error': str(err)}), 500
 
 
-@app.route('/api/Strona_zarządzania_firmą/update', methods=['PUT'])
+@app.route('/api/Strona_zarzadzania_firma/update', methods=['PUT'])
 def update_company_details():
     global logged_email
     try:
@@ -750,7 +750,7 @@ def update_company_details():
         return jsonify({'error': str(err)}), 500
 
 
-@app.route('/api/Strona_zarządzania_firmą/reservations', methods=['POST'])
+@app.route('/api/Strona_zarzadzania_firma/reservations', methods=['POST'])
 def get_reservations():
     global logged_email
     try:
