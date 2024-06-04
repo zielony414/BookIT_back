@@ -898,7 +898,7 @@ def get_user_reservations():
         db = get_db_connection()
         cursor = db.cursor()
 
-        query = """SELECT companies.name AS businessName, companies.Address AS location, services.service_name AS service, services.cost AS price, bookings.booking_time AS date
+        query = """SELECT companies.name AS businessName, companies.Address AS location, services.service_name AS service, services.cost AS price, bookings.booking_time AS date, companies.email AS company_email
                                  FROM users
                                  JOIN bookings ON users.id = bookings.user_ID
                                  JOIN services ON services.id = bookings.service_ID
@@ -918,7 +918,8 @@ def get_user_reservations():
                 'location': booking['location'],
                 'service': booking['service'],
                 'price': booking['price'],
-                'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S')  # Formatowanie daty do stringa
+                'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S'),  # Formatowanie daty do stringa
+                'company_email': booking['company_email']
             }
             formatted_bookings.append(formatted_booking)
 
