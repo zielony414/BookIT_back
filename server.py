@@ -7,7 +7,7 @@ import re
 import mail_sender
 import free_day
 #import schedule # pip install schedule - jest zastąpiony przez APScheduler
-from apscheduler.schedulers.background import BackgroundScheduler #pip instal APScheduler
+from apscheduler.schedulers.background import BackgroundScheduler #pip install APScheduler
 from werkzeug.utils import secure_filename #pip install Werkzeug
 from decouple import config
 import traceback #do usunięcia
@@ -575,8 +575,10 @@ def return_company():
         # Gdy pojawi się jakiś błąd, zwraca error
         return jsonify({'error': str(err)}), 500
 
+
 @app.route('/api/Strona_zarządzania_firmą', methods=['POST'])
 def return_company_details():
+    global public_email_company_reg
     try:
         # Pobranie danych z przesłanego żądania POST
         company_id = request.json.get('company_id')
@@ -586,7 +588,7 @@ def return_company_details():
         cursor = db.cursor()
 
         # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
-        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE ID = %s", (company_id,))
+        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (public_email_company_reg,))
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
@@ -636,14 +638,19 @@ def return_company_details():
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
 
+
 @app.route('/api/Strona_zarządzania_firmą2', methods=['POST'])
 def return_company_hours():
+    global public_email_company_reg
     try:
         company_id = request.json.get('company_id')
         db = get_db_connection()
         cursor = db.cursor()
 
-        cursor.execute(f"""SELECT monday_start, monday_end, tuesday_start, tuesday_end, wensday_start, wensday_end, thursday_start, thursday_end, friday_start, friday_end, saturday_start, saturday_end, sunday_start, sunday_end FROM bookit_main.opening_hours WHERE ID = {company_id}""")
+        cursor.execute(f"""SELECT monday_start, monday_end, tuesday_start, tuesday_end, wensday_start, wensday_end, thursday_start, thursday_end, friday_start, friday_end, saturday_start, saturday_end, sunday_start, sunday_end 
+                        FROM bookit_main.opening_hours 
+                        INNER JOIN bookit_main.companies ON bookit_main.opening_hours.company_ID = bookit_main.companies.ID
+                        WHERE bookit_main.companies.email = {public_email_company_reg}""")
         hours = cursor.fetchone()
         db.commit()
         db.close()
@@ -720,6 +727,7 @@ def return_company_hours():
 
 @app.route('/api/Strona_zarządzania_firmą/update', methods=['PUT'])
 def update_company_details():
+    global public_email_company_reg
     try:
         data = request.json
         company_id = data.get('company_id')
@@ -730,8 +738,8 @@ def update_company_details():
         cursor = db.cursor()
 
         # Dynamically create the SQL query
-        sql_query = f"UPDATE companies SET {field} = %s WHERE ID = %s"
-        cursor.execute(sql_query, (value, company_id))
+        sql_query = f"UPDATE companies SET {field} = %s WHERE email = %s"
+        cursor.execute(sql_query, (value, public_email_company_reg))
 
         db.commit()
         db.close()
@@ -739,6 +747,193 @@ def update_company_details():
         return jsonify({'message': 'Company details updated successfully'}), 200
     except Exception as err:
         return jsonify({'error': str(err)}), 500
+
+
+@app.route('/api/Strona_zarządzania_firmą/reservations', methods=['POST'])
+def get_reservations():
+    global public_email_company_reg
+    try:
+        data = request.json
+        company_id = data.get('company_id')
+        date = data.get('date')
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            SELECT 
+                b.booking_time,
+                b.ID,
+                s.service_name,
+                s.category,
+                s.execution_time,
+                s.additional_info,
+                u.email,
+                u.tel_nr
+            FROM 
+                bookit_main.bookings b
+            INNER JOIN 
+                bookit_main.services s ON b.service_ID = s.ID
+            INNER JOIN
+                bookit_main.users u ON b.user_ID = u.ID
+            INNER JOIN
+                bookit_main.companies c ON b.company_ID = c.ID
+            WHERE 
+                c.email = %s AND DATE(b.booking_time) = %s
+            """,
+            (public_email_company_reg, date)
+        )
+        reservations = cursor.fetchall()
+        conn.close()
+
+        if not reservations:
+            return jsonify({'error': 'Reservations not found'}), 404
+
+        result = []
+        for res in reservations:
+            booking_time = res['booking_time']
+            godzina = f"{booking_time.hour:02}:{booking_time.minute:02}"
+
+            execution_time = res['execution_time']
+            if isinstance(execution_time, timedelta):
+                execution_time_minutes = execution_time.total_seconds() / 60
+            else:
+                execution_time_minutes = execution_time / 60
+
+            result.append({
+                'booking_time': godzina,
+                'id_rezerwacji': res['ID'],
+                'service_name': res['service_name'],
+                'category': res['category'],
+                'execution_time': execution_time_minutes,
+                'opis': res['additional_info'],
+                'email': res['email'],
+                'sms': res['tel_nr']
+            })
+
+        return jsonify(result), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+
+@app.route('/api/update_company_hours', methods=['POST'])
+def update_company_hours():
+    global public_email_company_reg
+    try:
+        data = request.json
+        company_id = data.get('company_id')
+        hours = data.get('hours')
+
+        print('Received data:', data)  # Dodaj ten wiersz
+        if not company_id or not hours:
+            return jsonify({'error': 'Missing company_id or hours data'}), 400
+
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        query = """
+            UPDATE bookit_main.opening_hours
+            INNER JOIN  bookit_main.companies ON bookit_main.opening_hours.company_ID = bookit_main.companies.ID
+            SET monday_start = %s,
+                monday_end = %s,
+                tuesday_start = %s,
+                tuesday_end = %s,
+                wensday_start = %s,
+                wensday_end = %s,
+                thursday_start = %s,
+                thursday_end = %s,
+                friday_start = %s,
+                friday_end = %s,
+                saturday_start = %s,
+                saturday_end = %s,
+                sunday_start = %s,
+                sunday_end = %s
+            WHERE bookit_main.companies = %s
+        """
+        values = (
+            hours['monday_start'], hours['monday_end'],
+            hours['tuesday_start'], hours['tuesday_end'],
+            hours['wensday_start'], hours['wensday_end'],
+            hours['thursday_start'], hours['thursday_end'],
+            hours['friday_start'], hours['friday_end'],
+            hours['saturday_start'], hours['saturday_end'],
+            hours['sunday_start'], hours['sunday_end'],
+            public_email_company_reg
+        )
+
+        print('Executing query:', query % values)  # Dodaj ten wiersz
+
+        cursor.execute(query, values)
+        db.commit()
+        db.close()
+
+        return jsonify({'message': 'Company hours updated successfully'}), 200
+    except Exception as err:
+        print(err)
+        traceback.print_exc()
+        return jsonify({'error': str(err)}), 500
+
+@app.route('/api/update_reservation', methods=['POST'])
+def update_reservation():
+    try:
+        data = request.json
+        db = get_db_connection()
+        reservation = data.get('reservation')
+        if not reservation:
+            return jsonify({'error': 'No reservation data provided'}), 400
+
+        cursor = db.cursor()
+
+        query = """
+                    UPDATE bookit_main.bookings
+                    SET booking_time = %s
+                    WHERE ID = %s
+                """
+        values = (
+                reservation['booking_time'],
+                reservation['id_rezerwacji']
+        )
+
+        # Find the reservation in the database
+        cursor.execute(query, values)
+        db.commit()
+        db.close()
+
+        return jsonify({'message': 'Reservation updated successfully'}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/delete_reservation', methods=['DELETE'])
+def delete_reservation():
+    try:
+        data = request.json
+        db = get_db_connection()
+        reservation_id = data.get('id_rezerwacji')
+        if not reservation_id:
+            return jsonify({'error': 'No reservation ID provided'}), 400
+
+        cursor = db.cursor()
+
+        query = """
+                    DELETE FROM bookit_main.bookings
+                    WHERE ID = %s
+                """
+        values = (reservation_id,)
+
+        # Delete the reservation from the database
+        cursor.execute(query, values)
+        db.commit()
+        db.close()
+
+        return jsonify({'message': 'Reservation deleted successfully'}), 200
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 500
+
 
 ALLOWED_EXTENSIONS = set(['png', 'jpg',  'jpeg'])
 
