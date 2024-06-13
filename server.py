@@ -613,6 +613,8 @@ def return_company_details():
         cursor = db.cursor()
 
         email = request.json.get('email')
+        if not email:
+            return jsonify({'error': 'No email provided'}), 398
 
         # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
         cursor.execute(f"SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = '{email}';")
