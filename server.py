@@ -623,7 +623,7 @@ def return_company_details():
 
         # Jeśli nie ma takiej firmy, zwróć błąd 404
         if not company:
-            return jsonify({'error': 'Company not found'}), 400
+            return jsonify({'error': 'Company not found'}), 399
 
         result = []
         name = company['Name']
