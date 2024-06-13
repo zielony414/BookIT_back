@@ -607,14 +607,15 @@ def return_company():
 
 @app.route('/api/Strona_zarzadzania_firma', methods=['POST'])
 def return_company_details():
-    global logged_email
     try:
         # Nawiązanie połączenia z bazą danych
         db = get_db_connection()
         cursor = db.cursor()
 
+        email = request.json.get('email')
+
         # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
-        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (request.cookies.get('email'),))
+        cursor.execute("SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM companies WHERE email = %s", (email,))
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
