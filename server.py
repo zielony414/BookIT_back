@@ -1115,27 +1115,23 @@ def edit_profile():
         print("Nie udało się zaktualizować profilu:", str(err))
         return jsonify({'error': 'Wystąpił błąd.'}), 500
 
-@app.route('/api/user_reservations')
+@app.route('/api/user_reservations', methods=['GET', 'POST'])
 def get_user_reservations():
-    global logged_email
-    print(request.cookies.get('email'))
-    def send_bookings_query():
+    def send_bookings_query(user_email):
         db = get_db_connection()
         cursor = db.cursor()
 
         query = """SELECT companies.name AS businessName, companies.Address AS location, services.service_name AS service, services.cost AS price, bookings.booking_time AS date, companies.email AS company_email, bookings.recensed AS user_rating, bookings.id as booking_id
-                                 FROM users
-                                 JOIN bookings ON users.id = bookings.user_ID
-                                 JOIN services ON services.id = bookings.service_ID
-                                 JOIN companies ON companies.id = services.company_ID
-                                 WHERE users.email = %s
-                                 """
+                   FROM users
+                   JOIN bookings ON users.id = bookings.user_ID
+                   JOIN services ON services.id = bookings.service_ID
+                   JOIN companies ON companies.id = services.company_ID
+                   WHERE users.email = %s
+                   """
 
-        cursor.execute(query, (request.cookies.get('email'),))
+        cursor.execute(query, (user_email,))
         all_bookings = cursor.fetchall()
         db.close()
-
-
 
         # Zmiana nazw kluczy i formatowanie daty
         formatted_bookings = []
@@ -1154,7 +1150,11 @@ def get_user_reservations():
         return formatted_bookings
 
     try:
-        all_bookings = send_bookings_query()
+        user_email = request.headers.get('User-Email')  # Pobierz email z nagłówków
+        if not user_email:
+            return jsonify({'error': 'User email is required'}), 400
+
+        all_bookings = send_bookings_query(user_email)
         return jsonify(all_bookings), 200
 
     except Exception as err:
