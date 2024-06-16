@@ -672,16 +672,16 @@ def return_company_details():
 
 @app.route('/api/Strona_zarzadzania_firma2', methods=['POST'])
 def return_company_hours():
-    global logged_email
+    data = request.json
+    email = data.get('email')
     try:
-        company_id = request.json.get('company_id')
         db = get_db_connection()
         cursor = db.cursor()
 
         cursor.execute(f"""SELECT o.monday_start, o.monday_end, o.tuesday_start, o.tuesday_end, o.wensday_start, o.wensday_end, o.thursday_start, o.thursday_end, o.friday_start, o.friday_end, o.saturday_start, o.saturday_end, o.sunday_start, o.sunday_end 
                         FROM bookit_main.opening_hours o
                         INNER JOIN bookit_main.companies c ON o.company_ID = c.ID
-                        WHERE c.email = %s""", (request.cookies.get('email'),))
+                        WHERE c.email = '{email}'""")
         hours = cursor.fetchone()
         db.commit()
         db.close()
@@ -758,10 +758,9 @@ def return_company_hours():
 
 @app.route('/api/Strona_zarzadzania_firma/update', methods=['PUT'])
 def update_company_details():
-    global logged_email
     try:
         data = request.json
-        company_id = data.get('company_id')
+        email = data.get('email')
         field = data.get('field')
         value = data.get('value')
 
@@ -770,7 +769,7 @@ def update_company_details():
 
         # Dynamically create the SQL query
         sql_query = f"UPDATE companies SET {field} = %s WHERE email = %s"
-        cursor.execute(sql_query, (value, request.cookies.get('email')))
+        cursor.execute(sql_query, (value, email))
 
         db.commit()
         db.close()
@@ -785,14 +784,14 @@ def get_reservations():
     global logged_email
     try:
         data = request.json
-        company_id = data.get('company_id')
+        email = data.get('email')
         date = data.get('date')
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute(
-            """
+            f"""
             SELECT 
                 b.booking_time,
                 b.ID,
@@ -811,9 +810,8 @@ def get_reservations():
             INNER JOIN
                 bookit_main.companies c ON b.company_ID = c.ID
             WHERE 
-                c.email = %s AND DATE(b.booking_time) = %s
-            """,
-            (request.cookies.get('email'), date)
+                c.email = '{email}' AND DATE(b.booking_time) = '{date}'
+            """
         )
         reservations = cursor.fetchall()
         conn.close()
@@ -1150,8 +1148,7 @@ def get_user_reservations():
         return formatted_bookings
 
     try:
-        data = request.json
-        user_email = data.get('User-Email')  # Pobierz email z nagłówków
+        user_email = request.headers.get('User-Email')  # Pobierz email z nagłówków
         if not user_email:
             return jsonify({'error': 'User email is required'}), 400
 
