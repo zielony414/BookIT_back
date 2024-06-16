@@ -608,17 +608,17 @@ def return_company():
 @app.route('/api/Strona_zarzadzania_firma', methods=['POST'])
 def return_company_details():
     try:
-        #data = request.json
-        #email = data.get('email')
-        #if not email:
-           # return jsonify({'error': 'No email provided'}), 398
+        data = request.json
+        email = data.get('email')
+        if not email:
+           return jsonify({'error': 'No email provided'}), 398
 
         # Nawiązanie połączenia z bazą danych
         db = get_db_connection()
         cursor = db.cursor()
 
         # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
-        cursor.execute(f"SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM bookit_main.companies WHERE email = 'contact@holistic.pl';")
+        cursor.execute(f"SELECT Name, Description, Logo, tel_nr, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link FROM bookit_main.companies WHERE email = '{email}';")
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
