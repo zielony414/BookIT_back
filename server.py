@@ -1223,12 +1223,14 @@ def get_user_info_by_id():
 @app.route('/api/add_booking', methods=['POST'])
 def add_booking():
     try:
-        print("TERAZ WYKONUJE ADD BOOKING")
+        print("WYKONUJE ADD BOOKING")
         db = get_db_connection()
         cursor = db.cursor()
 
         data = request.json
 
+
+        print("dzialam przed zapisaniem danych do zmiennych")
         company_id = data['company_id']
         user_id = data['user_id']
         service_id = data['service_id']
@@ -1240,13 +1242,15 @@ def add_booking():
         reminder_sms = data['reminder_sms']
         booking_time = data['time'] 
         total_time_minutes = data['totalTime'] 
+        print("dzialam po zapisaniu danych do zmiennych")        
 
-        start_time = datetime.strptime(booking_time, '%H:%M')
+        start_time = datetime.datetime.strptime(booking_time, '%H:%M')
         end_time = start_time + timedelta(minutes=total_time_minutes)
                 
         if free_day.is_free_day(company_id, booking_date, start_time, end_time) and free_day.is_booking_time_free(company_id, booking_date, booking_time, total_time_minutes):
+            print("Wykonuje przed query!")
             query = """
-                INSERT INTO bookings (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms, 0)
+                INSERT INTO bookings (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
             """
             cursor.execute(query, (company_id, user_id, service_id, booking_datetime, confirm_mail, reminder_mail, confirm_sms, reminder_sms))
@@ -1278,7 +1282,7 @@ def add_to_day_schedule():
         booking_time = data['time']  # 'HH:MM' format
         total_time_minutes = data['totalTime']  # Total time in minutes
 
-        booking_datetime = datetime.strptime(booking_date, "%Y-%m-%d")
+        booking_datetime = datetime.datetime.strptime(booking_date, "%Y-%m-%d")
         reminder_date = booking_datetime - timedelta(days=1) #Data do przesłania do scheduled_email jako reminder email
         feedback_date = booking_datetime + timedelta(days=1) #Data do przesłania do scheduled_email jako email feedbackowy
         reminder_date_str = reminder_date.strftime("%Y-%m-%d")
@@ -1294,7 +1298,7 @@ def add_to_day_schedule():
             slots_to_fill += 1
         
         # Calculate the start and end slots
-        start_time = datetime.strptime(booking_time, '%H:%M')
+        start_time = datetime.datetime.strptime(booking_time, '%H:%M')
         end_time = start_time + timedelta(minutes=total_time_minutes)
         
         # Check if the record for the given date already exists
@@ -1431,13 +1435,14 @@ def return_company_info():
     try:
         # Pobranie danych z przesłanego żądania POST
         company_name = request.json.get('company_name')
+        print("back strony firmy dziala")
 
         # Nawiązanie połączenia z bazą danych
         db = get_db_connection()
         cursor = db.cursor()
 
-        # Wykonanie zapytania SQL do pobrania nazwy firmy na podstawie ID
-        cursor.execute("SELECT Name, Description, Logo, tel_nr, city, address FROM companies WHERE Name = '%s'", (company_name,))
+        # Wykonanie zapytania SQL do pobrania danych firmy na podstawie nazwy
+        cursor.execute(f"SELECT ID, Name, Description, Logo, tel_nr, city, address FROM companies WHERE name = '{company_name}'")
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
@@ -1448,6 +1453,7 @@ def return_company_info():
             return jsonify({'error': 'Company not found'}), 404
 
         result = []
+        id = company['ID']
         name = company['Name']
         description = company['Description']
         logo = company['Logo']
@@ -1462,16 +1468,16 @@ def return_company_info():
         else:
             logo_url = None
 
-
-        # Utwórz słownik z nazwą firmy
-        result = ({
+        # słownik z nazwą firmy
+        result = {
+            'ID': id,
             'name': name,
             'description': description,
             'logo': logo_url,
             'numer': numer,
             'city': city,
             'address': address
-        })
+        }
 
         # Zwróć nazwę firmy w formacie JSON
         return jsonify(result), 200
