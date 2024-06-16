@@ -784,14 +784,14 @@ def get_reservations():
     global logged_email
     try:
         data = request.json
-        company_id = data.get('company_id')
+        email = data.get('email')
         date = data.get('date')
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
         cursor.execute(
-            """
+            f"""
             SELECT 
                 b.booking_time,
                 b.ID,
@@ -810,9 +810,8 @@ def get_reservations():
             INNER JOIN
                 bookit_main.companies c ON b.company_ID = c.ID
             WHERE 
-                c.email = %s AND DATE(b.booking_time) = %s
-            """,
-            (request.cookies.get('email'), date)
+                c.email = '{email}' AND DATE(b.booking_time) = '{date}'
+            """
         )
         reservations = cursor.fetchall()
         conn.close()
