@@ -611,7 +611,7 @@ def return_company_details():
         data = request.json
         email = data.get('email')
         if not email:
-            return jsonify({'error': 'No email provided'}), 398
+            return jsonify({'error': 'No email provided'}), 398, email
 
         # Nawiązanie połączenia z bazą danych
         db = get_db_connection()
