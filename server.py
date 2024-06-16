@@ -1148,8 +1148,7 @@ def get_user_reservations():
         return formatted_bookings
 
     try:
-        data = request.json
-        user_email = data.get('User-Email')  # Pobierz email z nagłówków
+        user_email = request.headers.get('User-Email')  # Pobierz email z nagłówków
         if not user_email:
             return jsonify({'error': 'User email is required'}), 400
 
