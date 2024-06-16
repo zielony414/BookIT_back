@@ -608,10 +608,10 @@ def return_company():
 @app.route('/api/Strona_zarzadzania_firma', methods=['POST'])
 def return_company_details():
     try:
-        data = request.json
-        email = data.get('email')
-        if not email:
-            return jsonify({'error': 'No email provided'}), 398
+        #data = request.json
+        #email = data.get('email')
+        #if not email:
+           # return jsonify({'error': 'No email provided'}), 398
 
         # Nawiązanie połączenia z bazą danych
         db = get_db_connection()
