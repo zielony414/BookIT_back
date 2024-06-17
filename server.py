@@ -1193,17 +1193,17 @@ def get_services_by_company_id():
         db.close()
 
 @app.route('/api/user_info')
-def get_user_info_by_id():
+def get_user_info_by_email():
     try:
         db = get_db_connection()
         cursor = db.cursor()
 
-        user_id = request.args.get('user_id')
-        if not user_id:
-            return jsonify({"error": "Missing user_id"}), 400
+        user_email = request.json.get('user_email')
+        if not user_email:
+            return jsonify({"error": "Brak przekazanego user_email"}), 400
 
-        query = "SELECT ID, email, password, tel_nr, gender, address FROM users WHERE ID = %s"
-        cursor.execute(query, (user_id,))
+        query = f"SELECT ID, email, password, tel_nr, gender, address FROM users WHERE email = '{user_email}'"
+        cursor.execute(query)
         
         user = cursor.fetchone()
         if not user:
@@ -1254,11 +1254,11 @@ def add_booking():
                 
         if free_day.is_free_day(company_id, booking_date, start_time, end_time) and free_day.is_booking_time_free(company_id, booking_date, booking_time, total_time_minutes):
             print("Wykonuje przed query!")
-            query = """
+            query = f"""
                 INSERT INTO bookings (company_id, user_id, service_id, booking_time, confirm_mail, reminder_mail, confirm_sms, reminder_sms)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES ({company_id}, {user_id}, {service_id}, '{booking_datetime}', {confirm_mail}, {reminder_mail}, {confirm_sms}, {reminder_sms})
             """
-            cursor.execute(query, (company_id, user_id, service_id, booking_datetime, confirm_mail, reminder_mail, confirm_sms, reminder_sms))
+            cursor.execute(query)
             db.commit()
 
             print("Executing query booking: ", query)
@@ -1307,7 +1307,7 @@ def add_to_day_schedule():
         end_time = start_time + timedelta(minutes=total_time_minutes)
         
         # Check if the record for the given date already exists
-        cursor.execute("SELECT id FROM day_schedule WHERE company_id = %s AND Date = %s", (company_id, booking_date))
+        cursor.execute(f"SELECT id FROM day_schedule WHERE company_id = {company_id} AND Date = '{booking_date}'")
         record = cursor.fetchone()
 
         if free_day.is_free_day(company_id, booking_date, start_time, end_time) and free_day.is_booking_time_free(company_id, booking_date, booking_time, total_time_minutes):
@@ -1354,8 +1354,8 @@ def add_to_day_schedule():
             service_names = cursor.fetchall()
             service_names_str = ', '.join([service['service_name'] for service in service_names])        
 
-            query = "SELECT name, address, city FROM companies WHERE %s"
-            cursor.execute(query, (company_id,))
+            query = f"SELECT name, address, city FROM companies WHERE {company_id}"
+            cursor.execute(query)
             company = cursor.fetchone()            
 
             message = (
