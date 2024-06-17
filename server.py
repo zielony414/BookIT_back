@@ -781,7 +781,7 @@ def update_company_details():
 
 @app.route('/api/Strona_zarzadzania_firma/reservations', methods=['POST'])
 def get_reservations():
-    global logged_email
+
     try:
         data = request.json
         email = data.get('email')
@@ -850,14 +850,13 @@ def get_reservations():
 
 @app.route('/api/update_company_hours', methods=['POST'])
 def update_company_hours():
-    global logged_email
     try:
         data = request.json
-        company_id = data.get('company_id')
+        email = data.get('email')
         hours = data.get('hours')
 
         print('Received data:', data)  # Dodaj ten wiersz
-        if not company_id or not hours:
+        if not email or not hours:
             return jsonify({'error': 'Missing company_id or hours data'}), 400
 
         db = get_db_connection()
@@ -880,7 +879,7 @@ def update_company_hours():
                 saturday_end = %s,
                 sunday_start = %s,
                 sunday_end = %s
-            WHERE bookit_main.companies = %s
+            WHERE bookit_main.companies.email = %s
         """
         values = (
             hours['monday_start'], hours['monday_end'],
@@ -890,7 +889,7 @@ def update_company_hours():
             hours['friday_start'], hours['friday_end'],
             hours['saturday_start'], hours['saturday_end'],
             hours['sunday_start'], hours['sunday_end'],
-            request.cookies.get('email')
+            email
         )
 
         print('Executing query:', query % values)  # Dodaj ten wiersz
