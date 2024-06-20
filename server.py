@@ -1447,7 +1447,7 @@ def return_company_info():
         cursor = db.cursor()
 
         # Wykonanie zapytania SQL do pobrania danych firmy na podstawie nazwy
-        cursor.execute(f"SELECT ID, Name, Description, Logo, tel_nr, city, address FROM companies WHERE name = '{company_name}'")
+        cursor.execute(f"SELECT ID, Name, Description, Logo, tel_nr, city, address, reviews_no, sum_of_reviews FROM companies WHERE name = '{company_name}'")
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
@@ -1465,6 +1465,10 @@ def return_company_info():
         numer = company['tel_nr']
         city = company['city']
         address = company['address']
+        description = company['description'] 
+        reviews_no = company['Reviews_no']
+        sum_of_reviews = company['Sum_of_reviews']
+        avg_rating = round(sum_of_reviews / reviews_no, 2) if reviews_no > 0 else 0
 
         if logo:
             logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
@@ -1481,7 +1485,8 @@ def return_company_info():
             'logo': logo_url,
             'numer': numer,
             'city': city,
-            'address': address
+            'address': address,
+            'avg_rating': avg_rating
         }
 
         # Zwróć nazwę firmy w formacie JSON
