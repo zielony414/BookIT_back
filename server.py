@@ -1440,34 +1440,37 @@ def return_company_info():
     try:
         # Pobranie danych z przesłanego żądania POST
         company_name = request.json.get('company_name')
-        print("back strony firmy dziala")
-
         # Nawiązanie połączenia z bazą danych
         db = get_db_connection()
         cursor = db.cursor()
-
         # Wykonanie zapytania SQL do pobrania danych firmy na podstawie nazwy
         cursor.execute(f"SELECT ID, Name, Description, Logo, tel_nr, city, address, reviews_no, sum_of_reviews FROM companies WHERE name = '{company_name}'")
+
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
         db.close()
-
         # Jeśli nie ma takiej firmy, zwróć błąd 404
         if not company:
             return jsonify({'error': 'Company not found'}), 404
-
         result = []
         id = company['ID']
+        print(id)
         name = company['Name']
+        print(name)
         description = company['Description']
+        print(description)
         logo = company['Logo']
         numer = company['tel_nr']
+        print(numer)
         city = company['city']
+        print(city)
         address = company['address']
-        description = company['description'] 
-        reviews_no = company['Reviews_no']
-        sum_of_reviews = company['Sum_of_reviews']
+        print(address)
+        reviews_no = company['reviews_no']
+        print(reviews_no)
+        sum_of_reviews = company['sum_of_reviews']
+        print(sum_of_reviews)
         avg_rating = round(sum_of_reviews / reviews_no, 2) if reviews_no > 0 else 0
 
         if logo:
