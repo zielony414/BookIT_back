@@ -1455,22 +1455,14 @@ def return_company_info():
             return jsonify({'error': 'Company not found'}), 404
         result = []
         id = company['ID']
-        print(id)
         name = company['Name']
-        print(name)
         description = company['Description']
-        print(description)
         logo = company['Logo']
         numer = company['tel_nr']
-        print(numer)
         city = company['city']
-        print(city)
         address = company['address']
-        print(address)
         reviews_no = company['reviews_no']
-        print(reviews_no)
         sum_of_reviews = company['sum_of_reviews']
-        print(sum_of_reviews)
         avg_rating = round(sum_of_reviews / reviews_no, 2) if reviews_no > 0 else 0
 
         if logo:
