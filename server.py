@@ -1183,6 +1183,7 @@ def get_user_reservations():
         return formatted_bookings
 
     try:
+        data = request.json
         user_email = data.get('email')  # Pobierz email z nagłówków
         if not user_email:
             return jsonify({'error': 'User email is required'}), 400
