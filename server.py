@@ -1055,7 +1055,6 @@ def edit_profile():
     db = get_db_connection()
     cursor = db.cursor()
     print("CHUj")
-    print(request.cookies.get('email'))
     email = request.json.get('email')
     nrTelefonu = request.json.get('nrTelefonu')
     miasto = request.json.get('miasto')
@@ -1142,6 +1141,7 @@ def edit_profile():
         update_email()
 
         print(miasto)
+        db.close()
         return jsonify({'message': 'Profil zaktualizowany pomyślnie.'}), 200
 
     except Exception as err:
