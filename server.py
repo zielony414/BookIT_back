@@ -1047,14 +1047,14 @@ def get_user_info_by_email():
 
 @app.route('/api/edit_profile', methods=['POST'])
 def edit_profile():
+    user_email = request.headers.get('email')
+
     if not log_as_user:
       return jsonify({'error': 'Nie zalogowany.'}), 401
 
-    global logged_email
-
     db = get_db_connection()
     cursor = db.cursor()
-
+    print("CHUj")
     print(request.cookies.get('email'))
     email = request.json.get('email')
     nrTelefonu = request.json.get('nrTelefonu')
@@ -1182,8 +1182,8 @@ def get_user_reservations():
         return formatted_bookings
 
     try:
-        #user_email = request.headers.get('email')
-        user_email = 'konrad@konrad.com'
+        user_email = request.headers.get('email')
+        #user_email = 'konrad@konrad.com'
         if not user_email:
             return jsonify({'error': 'User email is required'}), 400
 
