@@ -1147,7 +1147,7 @@ def edit_profile():
         print("Nie udało się zaktualizować profilu:", str(err))
         return jsonify({'error': 'Wystąpił błąd.'}), 500
 
-@app.route('/api/user_reservations', methods=['POST'])
+@app.route('/api/user_reservations', methods=['POST', 'GET'])
 def get_user_reservations():
     def send_bookings_query(user_email):
         db = get_db_connection()
