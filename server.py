@@ -1038,7 +1038,7 @@ def get_user_info_by_email():
             "address": user['address']
         }
 
-        return jsonify(user_info)
+        return jsonify({'user_info': user_info}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
