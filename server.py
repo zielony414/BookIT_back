@@ -1010,6 +1010,41 @@ def upload_file():
         })
     return resp
 
+@app.route('/api/user_info_by_email', methods=['GET', 'POST'])
+def get_user_info_by_email():
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        user_email = request.headers.get('User-Email')
+        #user_email = "konrad@konrad.com"
+        if not user_email:
+            return jsonify({"error": "Missing user_email"}), 400
+
+        query = "SELECT ID, email, password, tel_nr, gender, address FROM users WHERE email = %s"
+
+        cursor.execute(query, (user_email,))
+
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        user_info = {
+            "id": user['ID'],
+            "email": user['email'],
+            "password": user['password'],
+            "tel_nr": user['tel_nr'],
+            "gender": user['gender'],
+            "address": user['address']
+        }
+
+        return jsonify(user_info)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        db.close()
+
 @app.route('/api/edit_profile', methods=['POST'])
 def edit_profile():
     if not log_as_user:
@@ -1225,6 +1260,7 @@ def get_user_info_by_id():
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
+
 
 @app.route('/api/add_booking', methods=['POST'])
 def add_booking():
