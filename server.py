@@ -781,7 +781,7 @@ def update_company_details():
 
 @app.route('/api/Strona_zarzadzania_firma/reservations', methods=['POST'])
 def get_reservations():
-    global logged_email
+
     try:
         data = request.json
         email = data.get('email')
@@ -850,14 +850,13 @@ def get_reservations():
 
 @app.route('/api/update_company_hours', methods=['POST'])
 def update_company_hours():
-    global logged_email
     try:
         data = request.json
-        company_id = data.get('company_id')
+        email = data.get('email')
         hours = data.get('hours')
 
         print('Received data:', data)  # Dodaj ten wiersz
-        if not company_id or not hours:
+        if not email or not hours:
             return jsonify({'error': 'Missing company_id or hours data'}), 400
 
         db = get_db_connection()
@@ -880,7 +879,7 @@ def update_company_hours():
                 saturday_end = %s,
                 sunday_start = %s,
                 sunday_end = %s
-            WHERE bookit_main.companies = %s
+            WHERE bookit_main.companies.email = %s
         """
         values = (
             hours['monday_start'], hours['monday_end'],
@@ -890,7 +889,7 @@ def update_company_hours():
             hours['friday_start'], hours['friday_end'],
             hours['saturday_start'], hours['saturday_end'],
             hours['sunday_start'], hours['sunday_end'],
-            request.cookies.get('email')
+            email
         )
 
         print('Executing query:', query % values)  # Dodaj ten wiersz
@@ -1442,23 +1441,19 @@ def return_company_info():
     try:
         # Pobranie danych z przesłanego żądania POST
         company_name = request.json.get('company_name')
-        print("back strony firmy dziala")
-
         # Nawiązanie połączenia z bazą danych
         db = get_db_connection()
         cursor = db.cursor()
-
         # Wykonanie zapytania SQL do pobrania danych firmy na podstawie nazwy
-        cursor.execute(f"SELECT ID, Name, Description, Logo, tel_nr, city, address FROM companies WHERE name = '{company_name}'")
+        cursor.execute(f"SELECT ID, Name, Description, Logo, tel_nr, city, address, reviews_no, sum_of_reviews FROM companies WHERE name = '{company_name}'")
+
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
         db.close()
-
         # Jeśli nie ma takiej firmy, zwróć błąd 404
         if not company:
             return jsonify({'error': 'Company not found'}), 404
-
         result = []
         id = company['ID']
         name = company['Name']
@@ -1467,6 +1462,9 @@ def return_company_info():
         numer = company['tel_nr']
         city = company['city']
         address = company['address']
+        reviews_no = company['reviews_no']
+        sum_of_reviews = company['sum_of_reviews']
+        avg_rating = round(sum_of_reviews / reviews_no, 2) if reviews_no > 0 else 0
 
         if logo:
             logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
@@ -1476,21 +1474,56 @@ def return_company_info():
             logo_url = None
 
         # słownik z nazwą firmy
-        result = {
+        result.append({
             'ID': id,
             'name': name,
             'description': description,
             'logo': logo_url,
             'numer': numer,
             'city': city,
-            'address': address
-        }
+            'address': address,
+            'avg_rating': avg_rating,
+            'reviews_no': reviews_no
+        })
 
         # Zwróć nazwę firmy w formacie JSON
         return jsonify(result), 200
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
+
+@app.route('/api/Strona_firmy/zdjęcia', methods=['POST'])
+def return_company_photos():
+    try:
+        company_id = request.json.get('ID')
+
+        db = get_db_connection()
+        cursor = db.cursor()
+        # Wykonanie zapytania SQL do pobrania danych firmy na podstawie nazwy  
+        cursor.execute(f"SELECT pictures FROM photos WHERE company_ID = '{company_id}'")
+        company = cursor.fetchone()
+        # Zamknięcie połączenia z bazą danych
+        db.close()
+
+        if not company:
+            return jsonify({'error': 'Company not found'}), 404
+    
+        result = []
+        for compnaies in company:
+            logo = compnaies['Logo']
+            if logo:
+                logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
+                logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+                logo_url = f"data:image/png;base64,{logo_base64}"
+            else:
+                logo_url = None
+            result.append({
+                'logo': logo_url,
+            })
+        return jsonify({'companies': result}), 200
+    except Exception as err:
+        # Gdy pojawi się jakiś błąd, zwraca error
+        return jsonify({'error': str(err)}), 500 
 
 @app.route('/api/user_page/oceny', methods=['POST'])
 def ocenianie():
