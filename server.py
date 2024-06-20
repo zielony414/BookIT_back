@@ -1176,14 +1176,14 @@ def get_user_reservations():
                 'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S'),  # Formatowanie daty do stringa
                 'company_email': booking['company_email'],
                 'user_rating': booking['user_rating'],
-                'booking_id': booking['booking_id'],
-                'recensed': booking['recensed']
+                'booking_id': booking['booking_id']
             }
             formatted_bookings.append(formatted_booking)
         return formatted_bookings
 
     try:
-        user_email = request.headers.get('email')
+        #user_email = request.headers.get('email')
+        user_email = 'konrad@konrad.com'
         if not user_email:
             return jsonify({'error': 'User email is required'}), 400
 
