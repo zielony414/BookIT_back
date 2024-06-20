@@ -1478,7 +1478,7 @@ def return_company_info():
             logo_url = None
 
         # słownik z nazwą firmy
-        result = {
+        result.append({
             'ID': id,
             'name': name,
             'description': description,
@@ -1488,7 +1488,7 @@ def return_company_info():
             'address': address,
             'avg_rating': avg_rating,
             'reviews_no': reviews_no
-        }
+        })
 
         # Zwróć nazwę firmy w formacie JSON
         return jsonify(result), 200
