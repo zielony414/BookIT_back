@@ -1486,7 +1486,8 @@ def return_company_info():
             'numer': numer,
             'city': city,
             'address': address,
-            'avg_rating': avg_rating
+            'avg_rating': avg_rating,
+            'reviews_no': reviews_no
         }
 
         # Zwróć nazwę firmy w formacie JSON
