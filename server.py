@@ -1142,7 +1142,8 @@ def get_user_reservations():
                 'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S'),  # Formatowanie daty do stringa
                 'company_email': booking['company_email'],
                 'user_rating': booking['user_rating'],
-                'booking_id': booking['booking_id']
+                'booking_id': booking['booking_id'],
+                'recensed': booking['recensed']
             }
             formatted_bookings.append(formatted_booking)
         return formatted_bookings
@@ -1516,12 +1517,14 @@ def ocenianie():
 
         cursor.execute(f"UPDATE bookings SET recensed=1 WHERE ID={booking_id};")
         db.commit()
-
+        print("CHUJ")
         db.close()
 
         return jsonify("dzialam"), 200
     except Exception as e:
+        print(e)
         return jsonify({"error": str(e)}), 500
+
 """"   
 @app.route('/api/czy_zalogowano')
 def czy_zalogowano():
