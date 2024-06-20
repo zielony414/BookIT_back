@@ -1069,7 +1069,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowy format numeru telefonu.'}), 400
 
         query = "UPDATE users SET tel_nr = %s WHERE email = %s"
-        cursor.execute(query, (nrTelefonu, request.cookies.get('email')))
+        cursor.execute(query, (nrTelefonu, user_email))
         db.commit()
         print("zaktualizowano numer telefonu!")
 
@@ -1078,7 +1078,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowa nazwa miasta.'}), 400
 
         query = "UPDATE users SET address = %s where email = %s"
-        cursor.execute(query, (miasto, request.cookies.get('email')))
+        cursor.execute(query, (miasto, user_email))
         db.commit()
         print("zaktualizowano miasto!")
 
@@ -1088,7 +1088,7 @@ def edit_profile():
 
         nowaPlec = 0 if plec == "Mezczyzna" else 1
         query = "UPDATE users SET gender = %s where email = %s"
-        cursor.execute(query, (nowaPlec, request.cookies.get('email')))
+        cursor.execute(query, (nowaPlec, user_email))
         db.commit()
 
         print("Plec została zaktualizowana!")
@@ -1099,7 +1099,7 @@ def edit_profile():
 
         #wyciaganie starego hasla z bazy
         query = "SELECT password FROM users WHERE email = %s"
-        cursor.execute(query, (request.cookies.get('email')))
+        cursor.execute(query, user_email)
         rawData = cursor.fetchall()
         haslo = rawData[0]['password']
 
@@ -1108,7 +1108,7 @@ def edit_profile():
             return jsonify({'error': 'Hasla są niepoprawne.'}), 400
 
         query = "UPDATE users SET password = %s WHERE email = %s"
-        cursor.execute(query, (noweHaslo, request.cookies.get('email')))
+        cursor.execute(query, (noweHaslo, user_email))
         db.commit()
         print("zaktualizowano haslo!")
 
@@ -1117,7 +1117,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
 
         query = "UPDATE users SET email = %s where email = %s"
-        cursor.execute(query, (email, request.cookies.get('email')))
+        cursor.execute(query, (email, user_email))
         db.commit()
         print("Email zaktualizowany pomyślnie")
 
@@ -1141,6 +1141,7 @@ def edit_profile():
 
         update_email()
 
+        print(miasto)
         return jsonify({'message': 'Profil zaktualizowany pomyślnie.'}), 200
 
     except Exception as err:
