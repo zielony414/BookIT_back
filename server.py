@@ -1440,26 +1440,24 @@ def return_company_info():
     try:
         # Pobranie danych z przesłanego żądania POST
         company_name = request.json.get('company_name')
-        print("Received request for company:", company_name)
+        print("back strony firmy dziala")
 
         # Nawiązanie połączenia z bazą danych
         db = get_db_connection()
-        cursor = db.cursor(dictionary=True)
+        cursor = db.cursor()
 
         # Wykonanie zapytania SQL do pobrania danych firmy na podstawie nazwy
-        query = "SELECT ID, Name, Description, Logo, tel_nr, city, address, reviews_no, sum_of_reviews FROM companies WHERE name = %s"
-        cursor.execute(query, (company_name,))
+        cursor.execute(f"SELECT ID, Name, Description, Logo, tel_nr, city, address, reviews_no, sum_of_reviews FROM companies WHERE name = '{company_name}'")
         company = cursor.fetchone()
 
         # Zamknięcie połączenia z bazą danych
-        cursor.close()
         db.close()
 
         # Jeśli nie ma takiej firmy, zwróć błąd 404
         if not company:
             return jsonify({'error': 'Company not found'}), 404
 
-        # Extracting the company information
+        result = []
         id = company['ID']
         name = company['Name']
         description = company['Description']
@@ -1467,11 +1465,11 @@ def return_company_info():
         numer = company['tel_nr']
         city = company['city']
         address = company['address']
-        reviews_no = company['reviews_no']
-        sum_of_reviews = company['sum_of_reviews']
+        description = company['description'] 
+        reviews_no = company['Reviews_no']
+        sum_of_reviews = company['Sum_of_reviews']
         avg_rating = round(sum_of_reviews / reviews_no, 2) if reviews_no > 0 else 0
 
-        # Handling logo conversion
         if logo:
             logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
             logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
@@ -1494,7 +1492,6 @@ def return_company_info():
 
         # Zwróć nazwę firmy w formacie JSON
         return jsonify(result), 200
-
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
