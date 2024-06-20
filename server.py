@@ -1010,7 +1010,7 @@ def upload_file():
         })
     return resp
 
-@app.route('/api/user_info_by_email', methods=['GET', 'POST'])
+@app.route('/api/user_info_by_email', methods=['POST'])
 def get_user_info_by_email():
     try:
         db = get_db_connection()
@@ -1147,7 +1147,7 @@ def edit_profile():
         print("Nie udało się zaktualizować profilu:", str(err))
         return jsonify({'error': 'Wystąpił błąd.'}), 500
 
-@app.route('/api/user_reservations', methods=['GET', 'POST'])
+@app.route('/api/user_reservations', methods=['POST'])
 def get_user_reservations():
     def send_bookings_query(user_email):
         db = get_db_connection()
