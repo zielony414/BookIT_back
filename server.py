@@ -1455,22 +1455,14 @@ def return_company_info():
             return jsonify({'error': 'Company not found'}), 404
         result = []
         id = company['ID']
-        print(id)
         name = company['Name']
-        print(name)
         description = company['Description']
-        print(description)
         logo = company['Logo']
         numer = company['tel_nr']
-        print(numer)
         city = company['city']
-        print(city)
         address = company['address']
-        print(address)
         reviews_no = company['reviews_no']
-        print(reviews_no)
         sum_of_reviews = company['sum_of_reviews']
-        print(sum_of_reviews)
         avg_rating = round(sum_of_reviews / reviews_no, 2) if reviews_no > 0 else 0
 
         if logo:
@@ -1498,6 +1490,39 @@ def return_company_info():
     except Exception as err:
         # Gdy pojawi się jakiś błąd, zwróć błąd 500
         return jsonify({'error': str(err)}), 500
+
+@app.route('/api/Strona_firmy/zdjęcia', methods=['POST'])
+def return_company_photos():
+    try:
+        company_id = request.json.get('ID')
+
+        db = get_db_connection()
+        cursor = db.cursor()
+        # Wykonanie zapytania SQL do pobrania danych firmy na podstawie nazwy  
+        cursor.execute(f"SELECT pictures FROM photos WHERE company_ID = '{company_id}'")
+        company = cursor.fetchone()
+        # Zamknięcie połączenia z bazą danych
+        db.close()
+
+        if not company:
+            return jsonify({'error': 'Company not found'}), 404
+    
+        result = []
+        for compnaies in company:
+            logo = compnaies['Logo']
+            if logo:
+                logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
+                logo_base64 = base64.b64encode(logo_bytes).decode('utf-8')
+                logo_url = f"data:image/png;base64,{logo_base64}"
+            else:
+                logo_url = None
+            result.append({
+                'logo': logo_url,
+            })
+        return jsonify({'companies': result}), 200
+    except Exception as err:
+        # Gdy pojawi się jakiś błąd, zwraca error
+        return jsonify({'error': str(err)}), 500 
 
 @app.route('/api/user_page/oceny', methods=['POST'])
 def ocenianie():
