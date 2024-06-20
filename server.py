@@ -1010,7 +1010,7 @@ def upload_file():
         })
     return resp
 
-@app.route('/api/user_info_by_email', methods=['GET', 'POST'])
+@app.route('/api/user_info_by_email', methods=['POST'])
 def get_user_info_by_email():
     try:
         db = get_db_connection()
@@ -1147,7 +1147,7 @@ def edit_profile():
         print("Nie udało się zaktualizować profilu:", str(err))
         return jsonify({'error': 'Wystąpił błąd.'}), 500
 
-@app.route('/api/user_reservations', methods=['GET', 'POST'])
+@app.route('/api/user_reservations', methods=['POST', 'GET'])
 def get_user_reservations():
     def send_bookings_query(user_email):
         db = get_db_connection()
@@ -1176,14 +1176,14 @@ def get_user_reservations():
                 'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S'),  # Formatowanie daty do stringa
                 'company_email': booking['company_email'],
                 'user_rating': booking['user_rating'],
-                'booking_id': booking['booking_id'],
-                'recensed': booking['recensed']
+                'booking_id': booking['booking_id']
             }
             formatted_bookings.append(formatted_booking)
         return formatted_bookings
 
     try:
-        user_email = request.headers.get('email')
+        #user_email = request.headers.get('email')
+        user_email = 'konrad@konrad.com'
         if not user_email:
             return jsonify({'error': 'User email is required'}), 400
 
