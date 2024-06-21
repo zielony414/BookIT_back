@@ -1016,8 +1016,8 @@ def get_user_info_by_email():
         db = get_db_connection()
         cursor = db.cursor()
 
-        user_email = request.headers.get('User-Email')
-        #user_email = "konrad@konrad.com"
+        user_email = request.cookies.get('email')
+        print(user_email)
         if not user_email:
             return jsonify({"error": "Missing user_email"}), 400
 
