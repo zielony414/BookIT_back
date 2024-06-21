@@ -1010,19 +1010,19 @@ def upload_file():
         })
     return resp
 
-@app.route('/api/user_info_by_email', methods=['POST', 'GET'])
+@app.route('/api/user_info_by_email', methods=['POST'])
 def get_user_info_by_email():
     try:
         db = get_db_connection()
         cursor = db.cursor()
 
-        user_email = request.cookies.get('email')
+        data = request.get_json()
+        user_email = data.get('email')
         print(user_email)
         if not user_email:
             return jsonify({"error": "Missing user_email"}), 400
 
         query = "SELECT ID, email, password, tel_nr, gender, address FROM users WHERE email = %s"
-
         cursor.execute(query, (user_email,))
 
         user = cursor.fetchone()
