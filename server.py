@@ -1010,7 +1010,7 @@ def upload_file():
         })
     return resp
 
-@app.route('/api/user_info_by_email', methods=['POST'])
+@app.route('/api/user_info_by_email', methods=['POST', 'GET'])
 def get_user_info_by_email():
     try:
         db = get_db_connection()
