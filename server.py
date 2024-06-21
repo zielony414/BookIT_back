@@ -1476,12 +1476,13 @@ def add_to_day_schedule():
 def return_company_info():
     try:
         # Pobranie danych z przesłanego żądania POST
-        company_name = request.json.get('company_name')
+        company_name = request.json.get('company_name')        
+
         # Nawiązanie połączenia z bazą danych
         db = get_db_connection()
         cursor = db.cursor()
         # Wykonanie zapytania SQL do pobrania danych firmy na podstawie nazwy
-        cursor.execute(f"SELECT ID, Name, Description, Logo, tel_nr, city, address, reviews_no, sum_of_reviews FROM companies WHERE name = '{company_name}'")
+        cursor.execute(f"SELECT ID, Name, Description, Logo, tel_nr, city, address, Site_link, Facebook_link, Linkedin_link, Instagram_link, X_link, Tiktok_link, reviews_no, sum_of_reviews FROM companies WHERE name = '{company_name}'")
 
         company = cursor.fetchone()
 
@@ -1498,9 +1499,16 @@ def return_company_info():
         numer = company['tel_nr']
         city = company['city']
         address = company['address']
+        Site_link = company['Site_link']
+        Facebook_link = company['Facebook_link']
+        Linkedin_link = company['Linkedin_link']
+        Instagram_link = company['Instagram_link']
+        X_link = company['X_link']
+        Tiktok_link = company['Tiktok_link']
+
         reviews_no = company['reviews_no']
         sum_of_reviews = company['sum_of_reviews']
-        avg_rating = round(sum_of_reviews / reviews_no, 2) if reviews_no > 0 else 0
+        avg_rating = round(sum_of_reviews / reviews_no, 2) if reviews_no > 0 else 0    
 
         if logo:
             logo_bytes = bytes(logo)  # Konwertuj łańcuch znaków na bajty
@@ -1518,6 +1526,12 @@ def return_company_info():
             'numer': numer,
             'city': city,
             'address': address,
+            'facebook': Facebook_link,
+            'linkedin': Linkedin_link,
+            'instagram': Instagram_link,
+            'x': X_link,
+            'tiktok': Tiktok_link,
+
             'avg_rating': avg_rating,
             'reviews_no': reviews_no
         })
