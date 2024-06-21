@@ -1010,19 +1010,19 @@ def upload_file():
         })
     return resp
 
-@app.route('/api/user_info_by_email', methods=['GET', 'POST'])
+@app.route('/api/user_info_by_email', methods=['POST'])
 def get_user_info_by_email():
     try:
         db = get_db_connection()
         cursor = db.cursor()
 
-        user_email = request.headers.get('User-Email')
-        #user_email = "konrad@konrad.com"
+        data = request.get_json()
+        user_email = data.get('email')
+        print(user_email)
         if not user_email:
             return jsonify({"error": "Missing user_email"}), 400
 
         query = "SELECT ID, email, password, tel_nr, gender, address FROM users WHERE email = %s"
-
         cursor.execute(query, (user_email,))
 
         user = cursor.fetchone()
@@ -1038,7 +1038,7 @@ def get_user_info_by_email():
             "address": user['address']
         }
 
-        return jsonify(user_info)
+        return jsonify({'user_info': user_info}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -1047,15 +1047,14 @@ def get_user_info_by_email():
 
 @app.route('/api/edit_profile', methods=['POST'])
 def edit_profile():
+    user_email = request.headers.get('email')
+
     if not log_as_user:
       return jsonify({'error': 'Nie zalogowany.'}), 401
 
-    global logged_email
-
     db = get_db_connection()
     cursor = db.cursor()
-
-    print(request.cookies.get('email'))
+    print("CHUj")
     email = request.json.get('email')
     nrTelefonu = request.json.get('nrTelefonu')
     miasto = request.json.get('miasto')
@@ -1069,7 +1068,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowy format numeru telefonu.'}), 400
 
         query = "UPDATE users SET tel_nr = %s WHERE email = %s"
-        cursor.execute(query, (nrTelefonu, request.cookies.get('email')))
+        cursor.execute(query, (nrTelefonu, user_email))
         db.commit()
         print("zaktualizowano numer telefonu!")
 
@@ -1078,7 +1077,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowa nazwa miasta.'}), 400
 
         query = "UPDATE users SET address = %s where email = %s"
-        cursor.execute(query, (miasto, request.cookies.get('email')))
+        cursor.execute(query, (miasto, user_email))
         db.commit()
         print("zaktualizowano miasto!")
 
@@ -1088,7 +1087,7 @@ def edit_profile():
 
         nowaPlec = 0 if plec == "Mezczyzna" else 1
         query = "UPDATE users SET gender = %s where email = %s"
-        cursor.execute(query, (nowaPlec, request.cookies.get('email')))
+        cursor.execute(query, (nowaPlec, user_email))
         db.commit()
 
         print("Plec została zaktualizowana!")
@@ -1099,7 +1098,7 @@ def edit_profile():
 
         #wyciaganie starego hasla z bazy
         query = "SELECT password FROM users WHERE email = %s"
-        cursor.execute(query, (request.cookies.get('email')))
+        cursor.execute(query, user_email)
         rawData = cursor.fetchall()
         haslo = rawData[0]['password']
 
@@ -1108,7 +1107,7 @@ def edit_profile():
             return jsonify({'error': 'Hasla są niepoprawne.'}), 400
 
         query = "UPDATE users SET password = %s WHERE email = %s"
-        cursor.execute(query, (noweHaslo, request.cookies.get('email')))
+        cursor.execute(query, (noweHaslo, user_email))
         db.commit()
         print("zaktualizowano haslo!")
 
@@ -1117,7 +1116,7 @@ def edit_profile():
             return jsonify({'error': 'Nieprawidłowy format emaila.'}), 400
 
         query = "UPDATE users SET email = %s where email = %s"
-        cursor.execute(query, (email, request.cookies.get('email')))
+        cursor.execute(query, (email, user_email))
         db.commit()
         print("Email zaktualizowany pomyślnie")
 
@@ -1141,13 +1140,15 @@ def edit_profile():
 
         update_email()
 
+        print(miasto)
+        db.close()
         return jsonify({'message': 'Profil zaktualizowany pomyślnie.'}), 200
 
     except Exception as err:
         print("Nie udało się zaktualizować profilu:", str(err))
         return jsonify({'error': 'Wystąpił błąd.'}), 500
 
-@app.route('/api/user_reservations', methods=['GET', 'POST'])
+@app.route('/api/user_reservations', methods=['POST', 'GET'])
 def get_user_reservations():
     def send_bookings_query(user_email):
         db = get_db_connection()
@@ -1176,14 +1177,14 @@ def get_user_reservations():
                 'date': booking['date'].strftime('%Y-%m-%d %H:%M:%S'),  # Formatowanie daty do stringa
                 'company_email': booking['company_email'],
                 'user_rating': booking['user_rating'],
-                'booking_id': booking['booking_id'],
-                'recensed': booking['recensed']
+                'booking_id': booking['booking_id']
             }
             formatted_bookings.append(formatted_booking)
         return formatted_bookings
 
     try:
         user_email = request.headers.get('email')
+        #user_email = 'konrad@konrad.com'
         if not user_email:
             return jsonify({'error': 'User email is required'}), 400
 
