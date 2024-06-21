@@ -1377,8 +1377,10 @@ def add_to_day_schedule():
         end_time = start_time + timedelta(minutes=total_time_minutes)
         
         # Check if the record for the given date already exists
-        cursor.execute("SELECT id FROM day_schedule WHERE company_id = %s AND Date = %s", (company_id, booking_date))
+        query = f"SELECT id FROM day_schedule WHERE company_id = {company_id} AND Date = '{booking_date}'"
+        cursor.execute(query)
         record = cursor.fetchone()
+        print("SCHEDULE SELECT: ", query )
 
         if free_day.is_free_day(company_id, booking_date, start_time, end_time) and free_day.is_booking_time_free(company_id, booking_date, booking_time, total_time_minutes):
             if record:
@@ -1391,7 +1393,7 @@ def add_to_day_schedule():
                         SET `{slot_column}` = 1
                         WHERE company_ID = {company_id} AND Date = '{booking_date}'
                     """
-                    
+                    print("SCHEDULE UPDATE: ", query)
                     cursor.execute(query)                    
                     record = cursor.fetchone()                    
                     current_time += timedelta(minutes=30)        
@@ -1413,7 +1415,7 @@ def add_to_day_schedule():
                     INSERT INTO day_schedule ({', '.join(columns)})
                     VALUES ({', '.join(map(str, values))})
                 """
-                print("Executing query schedule: ", query)
+                print("SCHEDULE INSERT: ", query)
                 cursor.execute(query)
                 print("Insertion successful")  
                 db.commit()                      
@@ -1424,8 +1426,9 @@ def add_to_day_schedule():
             service_names = cursor.fetchall()
             service_names_str = ', '.join([service['service_name'] for service in service_names])        
 
-            query = "SELECT name, address, city FROM companies WHERE %s"
-            cursor.execute(query, (company_id,))
+            query = f"SELECT name, address, city FROM companies WHERE ID = {company_id}"
+            print("SCHEDULE SELECT 2: ", query)
+            cursor.execute(query)
             company = cursor.fetchone()            
 
             message = (

@@ -22,7 +22,7 @@ def add_free_day(company_ID, date):
     try:
         db = get_db_connection()
         cursor = db.cursor()
-        cursor.execute(f"INSERT INTO free_days (company_ID, date) VALUES ('{company_ID}', '{date}');")
+        cursor.execute(f"INSERT INTO free_days (company_ID, date) VALUES ({company_ID}, '{date}');")
         result = cursor.fetchall()
         db.close()
 
