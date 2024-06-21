@@ -1231,6 +1231,7 @@ def get_services_by_company_id():
 
 @app.route('/api/user_info')
 def get_user_info_by_id():
+    print("przynajmnije sie wykonuje")
     try:
         db = get_db_connection()
         cursor = db.cursor()
@@ -1261,6 +1262,37 @@ def get_user_info_by_id():
         return jsonify({"error": str(e)}), 500
     finally:
         db.close()
+
+@app.route('/api/User_email_to_id', methods=['POST'])
+def return_user_id():
+    try:
+        # Pobranie danych z przesłanego żądania POST
+        email = request.json.get('email')        
+
+        # Nawiązanie połączenia z bazą danych
+        db = get_db_connection()
+        cursor = db.cursor()
+
+        # Wykonanie zapytania SQL do pobrania ID użytkownika na podstawie emaila
+        cursor.execute(f"SELECT ID FROM users WHERE email = '{email}'")
+
+        user = cursor.fetchone()
+
+        # Zamknięcie połączenia z bazą danych
+        db.close()
+        
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Przypisanie wartości ID
+        user_id = user['ID']
+
+        # Zwróć ID użytkownika w formacie JSON
+        return jsonify({'id': user_id}), 200
+    except Exception as err:
+        # Gdy pojawi się jakiś błąd, zwróć błąd 500
+        return jsonify({'error': str(err)}), 500
+
 
 
 @app.route('/api/add_booking', methods=['POST'])
